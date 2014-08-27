@@ -1,0 +1,15 @@
+MODULE dip_params
+    USE params
+    USE double
+    IMPLICIT NONE
+!    REAL(KIND=DP), PARAMETER  :: lambda = 203.7655_DP ! Wavelength in nm
+    REAL(KIND=DP), PARAMETER :: wp = omega
+!    REAL(KIND=DP), PARAMETER :: wp = chi/lambda
+    REAL(KIND=DP), PARAMETER :: w12 = -0.8_DP 
+    REAL(KIND=DP), PARAMETER :: w21 = -w12
+!    REAL(KIND=DP), PARAMETER :: E0 = 0.1_DP
+    REAL(KIND=DP), PARAMETER :: g21 = 0.2_DP
+    COMPLEX(KIND=DP), PARAMETER ::  mu21 = (0.3_DP, 0.1_DP)
+
+END MODULE dip_params
+

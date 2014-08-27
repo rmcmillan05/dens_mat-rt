@@ -1,0 +1,50 @@
+MODULE matrix_ops
+    USE double
+    IMPLICIT NONE
+    PRIVATE
+    PUBLIC :: commute, mmult
+
+CONTAINS
+
+FUNCTION commute(A, B)
+    USE double
+    IMPLICIT NONE
+    COMPLEX(KIND=DP), INTENT(IN), DIMENSION(:,:) :: A, B
+    COMPLEX(KIND=DP), ALLOCATABLE                :: commute(:,:)
+    COMPLEX(KIND=DP) :: y
+    INTEGER                                   :: s, nu, n, m
+
+    s = UBOUND(A,1)
+    ALLOCATE(commute(s,s))
+
+    DO n = 1,s
+        DO m = 1,s
+            y = (0.0_DP, 0.0_DP)
+            DO nu = 1,s
+                y = y + A(n, nu)*B(nu, m) - B(n, nu)*A(nu, m)
+            ENDDO
+            commute(n,m) = y
+        ENDDO
+    ENDDO
+
+END FUNCTION commute
+
+FUNCTION mmult(A, B)
+    USE double
+    IMPLICIT NONE
+    COMPLEX(KIND=DP), INTENT(IN), DIMENSION(:,:) :: A, B
+    COMPLEX(KIND=DP), ALLOCATABLE :: mmult(:,:)
+    INTEGER :: s, n, m
+
+    s = UBOUND(A,1)
+    ALLOCATE(mmult(s,s))
+
+    DO n = 1, s
+        DO m = 1, s
+            mmult(n,m) = A(n,m) * B(n,m)
+        ENDDO
+    ENDDO
+
+END FUNCTION mmult
+
+END MODULE matrix_ops

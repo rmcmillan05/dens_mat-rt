@@ -1,0 +1,165 @@
+#!/bin/bash
+
+FILE='Makefile'
+
+COMP='gfortran'
+GNU_FFLAGS=' -O3 -fopenmp -Wall -Wextra -Wconversion -pedantic'
+INTEL_FFLAGS=' -O3 -fopenmp'
+
+# PASSED OPTIONS
+VERB='@'
+if [ $# -ge 1 ]; then
+    for OPT in $@; do
+        if [ "$OPT" == '-h' -o "$OPT" == '--help' ]; then
+echo " 
+TO INSTALL:                                                              
+                                                                                
+    ./configure [ -h -v ]                                                       
+        -h : --help    Display this help and exit.                              
+        -v : --verbose Show all compiler commands during make.                  
+    make [all]                                                                  
+                                                                                
+To make an individual program (example $PROGDIR/rho_prop.f90):                  
+                                                                                
+    make $BINDIR/rho_prop.exe                                                   
+                                                                                
+where $PROGDIR and $BINDIR are as below.                                        
+                                                                                
+To modify options, export variables:                                            
+                                                                                
+    F90     = [gfortran]                                                        
+    FFLAGS  = [-O3 -fopenmp -Wall -Wextra -Wconversion -pedantic] (for gfortran)
+            = [-O3 -fopenmp] (for ifort)                                        
+    PROGDIR = [./progs] (where main programs to compile are located)            
+    SRCDIR  = [./src]   (where source/module files are located)                 
+    BINDIR  = [./bin]   (where executables will be stored)                      
+                                                                                
+Main programs are stored in ./progs directory which currently contains          
+rho_prop.f90                                                                    
+rho_perturb.f90                                                                 
+harm_hamil.f90                                                                  
+(See the headers of those files to see what they do and how to run              
+ the executables)                                                               
+                                                                                
+Module source codes are stored in ./src directory.                              
+                                                                                
+Example data stored in:                                                         
+DATA/data_2level (2 level system)                                               
+DATA/data_3level (3 level system)                                               
+DATA/data_harmonic (harmonic oscillator - see ./progs/harm_hamil.f95 to modify) 
+"
+            exit 1
+        elif [ "$OPT" == '-v' -o "$OPT" == '--verbose' ]; then
+            echo 'Verbose mode selected.'
+            VERB=''
+        else
+            echo 'Invalid option, type "./configure -h" for help.'
+            exit 2
+        fi
+    done
+fi
+    
+if [ -e $FILE ]; then
+    rm $FILE
+else
+    touch $FILE
+fi
+
+: ${PROGDIR:='progs'}
+: ${SRCDIR:='src'}
+: ${BINDIR:='bin'}
+: ${F90:=$COMP}
+
+shopt -s extglob
+PROGDIR_=${PROGDIR%%+(/)}
+SRCDIR_=${SRCDIR%%+(/)}
+BINDIR_=${BINDIR%%+(/)}
+
+rm -r $SRCDIR_/*.o $PROGDIR_/*.o 2>/dev/null
+
+if [ "$F90" == "gfortran" ]; then
+    : ${FFLAGS:=$GNU_FFLAGS}
+    LFLAG='-J'
+elif [ "$F90" == "ifort" ]; then
+    : ${FFLAGS:=$INTEL_FFLAGS}
+    LFLAG='-module'
+fi
+
+echo '# MAIN PROGRAMS TO COMPILE' >> $FILE
+EXEC=()
+PROG=()
+PNAME=()
+i=0
+for foo in ${PROGDIR_}/*.f90 ; do
+    if [ ! -e $foo ]; then 
+        continue
+    fi
+    i=$(($i + 1))
+    N=`basename $foo`
+    NAM=${N:0:${#N}-4}
+    EXEC+=(${NAM})
+    PROG+=(${PROGDIR_}/${NAM}'.o')
+    PNAME+=(${BINDIR_}/${NAM}'.exe')
+    echo 'EXEC'${i}' = '${EXEC[$((i-1))]} >> $FILE
+    echo 'PROG'${i}' = '${PROG[$((i-1))]} >> $FILE
+    echo >> $FILE
+done
+TOT=$i
+echo >> $FILE
+
+echo '# DIRECTORIES FOR CONTENTS' >> $FILE
+echo '    # WHERE MAIN PROGRAMS ARE' >> $FILE
+echo 'PROGDIR = '$PROGDIR_ >> $FILE
+echo '    # WHERE SOURCE FILES (MODULES) ARE' >> $FILE
+echo 'SRCDIR = '$SRCDIR_ >> $FILE
+echo '    # WHERE EXECUTABLES WILL BE STORED' >> $FILE
+echo 'BINDIR = '$BINDIR_ >> $FILE
+echo '    # WHERE .MOD FILES WILL BE STORED' >> $FILE
+echo 'MODDIR = '$BINDIR_'/mods' >> $FILE
+echo >> $FILE
+
+echo '# COMPILER AND OPTIONS' >> $FILE
+echo 'F90 = '$F90 >> $FILE
+echo 'FFLAGS = '$FFLAGS >> $FILE
+echo 'LFLAG = '$LFLAG >> $FILE
+echo >> $FILE
+
+echo '# WHERE SOURCE FILES ARE LOCATED' >> $FILE
+echo 'VPATH = $(SRCDIR)' >> $FILE
+echo 'SRCOBJ = $(wildcard $(SRCDIR)/*f90)' >> $FILE
+echo 'MODOBJ = $(SRCOBJ:.f90=.o)' >> $FILE
+echo >> $FILE
+
+echo 'all: '${PNAME[*]} >> $FILE
+echo >> $FILE
+
+echo '# MODULE DEPENDENCIES' >> $FILE
+if [ -e 'check_dependencies' ]; then
+    ./check_dependencies $SRCDIR_ >> $FILE
+else
+    check_dependencies $SRCDIR_ >> $FILE
+fi
+
+echo >> $FILE
+
+for i in $(seq $TOT); do
+    echo '# BUILDING '${EXEC[$((i-1))]} >> $FILE
+    echo ''${PNAME[$((i-1))]}': $(MODOBJ) $(PROG'$i')' >> $FILE
+	echo -e '\t@if [ ! -e $(BINDIR) ]; then mkdir -p $(BINDIR); fi' >> $FILE
+    echo -e "\t@echo '----------------------'" >> $FILE
+    echo -e "\t@echo 'Linking '${EXEC[$((i-1))]}" >> $FILE
+    echo -e '\t'$VERB'$(F90) $(FFLAGS) -o '${PNAME[$((i-1))]}' '${PROG[$((i-1))]}' $(MODOBJ)' >> $FILE
+    echo -e "\t@echo '----------------------'" >> $FILE
+    echo >> $FILE
+done
+
+echo '# COMPILING MODULES' >> $FILE
+echo '%.o:%.f90' >> $FILE
+echo -e '\t@if [ ! -e $(MODDIR) ]; then mkdir -p $(MODDIR); fi' >> $FILE
+echo -e "\t@echo 'Compiling \$<'" >> $FILE
+echo -e '\t'$VERB'$(F90) $(FFLAGS) -c $< -o $@ $(LFLAG) $(MODDIR)' >> $FILE
+echo >> $FILE
+
+echo '# CLEANING UP' >> $FILE
+echo 'clean:' >> $FILE
+echo -e '\t rm -r $(MODDIR) $(BINDIR) $(SRCDIR)/*.o $(PROGDIR)/*.o' >> $FILE

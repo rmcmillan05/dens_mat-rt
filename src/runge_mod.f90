@@ -1,6 +1,7 @@
 MODULE runge_mod
     USE double
     IMPLICIT NONE
+
     PRIVATE
     PUBLIC :: runge
 
@@ -8,51 +9,58 @@ CONTAINS
 
 SUBROUTINE runge
     USE double
-    USE params
+    USE params , ONLY : num_lev, field, npts, rk_step, positions, mu, rho_0,  &
+                        out_file, npos
     USE fields
-!    USE params, ONLY : time_par 
     IMPLICIT NONE
-    INTEGER :: out_id=50
-    COMPLEX(KIND=DP), ALLOCATABLE, DIMENSION(:,:) :: rho
-    COMPLEX(KIND=DP), ALLOCATABLE, DIMENSION(:,:)              :: k1, k2, k3, k4
-!    COMPLEX(KIND=DP), INTENT(IN), DIMENSION(:,:)               :: rho_0, mu
-!    REAL(KIND=DP), INTENT(IN), DIMENSION(:,:) :: gma, big_gma
-    INTEGER :: npts ! total npts
-!    INTEGER, INTENT(IN), DIMENSION(:,:)                        :: positions
-    INTEGER                                                    :: i, j
-    INTEGER :: n,m
-    REAL(KIND=DP)                                              :: h, t
-    CHARACTER(LEN=2)        :: poschar
-    CHARACTER(LEN=16)       :: fieldchar
-    COMPLEX(KIND=DP), ALLOCATABLE, DIMENSION(:,:) :: comm, rho_eq
-    CHARACTER(LEN=64) :: charfmat = '(ES16.8)'
-    REAL(KIND=DP)   :: dipole
-    REAL, PARAMETER :: pfraco=5.0 ! Percentage increment in screen update
-    REAL :: pfrac=0.0 ! Percentage increment in screen update
-    REAL :: pcomp
 
-    h = 1.0_DP/REAL(nptspau,KIND=DP)
-    npts = NINT(nptspau * trange_au)
+    ! rho(t)
+    COMPLEX(KIND=DP), ALLOCATABLE                 :: rho(:,:)
+    ! RK variables
+    COMPLEX(KIND=DP), ALLOCATABLE, DIMENSION(:,:) :: k1, k2, k3, k4
+    ! Dummy index variables
+    INTEGER                                       :: i, j, n, m 
+    ! Time
+    REAL(KIND=DP)                                 :: t
+    ! Commuted matrix
+    COMPLEX(KIND=DP), ALLOCATABLE                 :: comm(:,:)
+    ! Dipole at each time-step
+    REAL(KIND=DP)                                 :: dipole
+    !
+    ! Title format specifier
+    CHARACTER(LEN=64)                             :: charfmat = '(ES16.8)'
+    ! Title for rho element column
+    CHARACTER(LEN=2)                              :: poschar
+    ! Title for field column
+    CHARACTER(LEN=16)                             :: fieldchar
+    ! File id for output
+    INTEGER                                       :: out_id=50
+    !
+    ! Percentage increment in screen update
+    REAL, PARAMETER                               :: pfraco=5.0 
+    ! Percentage increment in screen update
+    REAL                                          :: pfrac=0.0 
+    ! Percentage complete
+    REAL                                          :: pcomp
 
+    ! Write output to file
     OPEN(UNIT=out_id, FILE=out_file, STATUS='REPLACE')
 
-    ALLOCATE(                         &
-             rho(num_lev,num_lev),    &
-             rho_eq(num_lev,num_lev), &
-             comm(num_lev,num_lev),   &
-             k1(num_lev,num_lev),     &
-             k2(num_lev,num_lev),     &
-             k3(num_lev,num_lev),     &
-             k4(num_lev,num_lev)      &
+    ALLOCATE(                                                                 &
+             rho(num_lev,num_lev),                                            &
+             comm(num_lev,num_lev),                                           &
+             k1(num_lev,num_lev),                                             &
+             k2(num_lev,num_lev),                                             &
+             k3(num_lev,num_lev),                                             &
+             k4(num_lev,num_lev)                                              &
              )
     
-    rho_eq = 0.0_DP !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-    rho = rho_0
-    t   = 0.0_DP
+    ! Initializing
+    rho    = rho_0
+    t      = 0.0_DP
     dipole = 0.0_DP
 
-    !! PRINTING TITLES FOR COLUMNS !!
+    ! Printing column headers
     WRITE(out_id, '(A16)', ADVANCE='NO') ' t              '
     fieldchar=' '//TRIM(field)//'(t)'
     WRITE(out_id, '(A16)', ADVANCE='NO') fieldchar
@@ -67,7 +75,7 @@ SUBROUTINE runge
     ENDDO
     WRITE(out_id,*)
 
-    !! PRINTING VALUES AT t=0 !!
+    ! Printing values at t=0
     WRITE(out_id, charfmat, ADVANCE='NO') t
     WRITE(out_id, charfmat, ADVANCE='NO') efield(field, t)
     WRITE(out_id, charfmat, ADVANCE='NO') dipole
@@ -79,20 +87,23 @@ SUBROUTINE runge
     ENDDO                                 
     WRITE(out_id,*)
 
+    ! Percentage complete
     pcomp = REAL(npts)/pfraco
 
     DO i = 0, npts-1
 
+        ! Initialize RK variables
         k1=0.0_DP
         k2=0.0_DP
         k3=0.0_DP
         k4=0.0_DP
 
+        ! Calculating RK variables
         comm = commute(mu,rho)
         DO n = 1,num_lev
             DO m =1,num_lev
                 IF ( m >= n ) THEN
-                    k1(n,m) = runge_k_nm(n,m,t,rho,  h,field,gma,big_gma,comm,rho_eq)
+                    k1(n,m) = runge_k_nm(n, m, t, rho, comm)
                 ENDIF
             ENDDO
         ENDDO
@@ -101,7 +112,8 @@ SUBROUTINE runge
         DO n = 1,num_lev
             DO m =1,num_lev
                 IF ( m >= n ) THEN
-                    k2(n,m) = runge_k_nm(n,m,t+0.5_DP*h,rho+0.5_DP*k1,  h,field,gma,big_gma,comm,rho_eq)
+                    k2(n,m) = runge_k_nm(n, m, t+0.5_DP*rk_step,              &
+                                         rho+0.5_DP*k1, comm)
                 ENDIF
             ENDDO
         ENDDO
@@ -110,7 +122,8 @@ SUBROUTINE runge
         DO n = 1,num_lev
             DO m =1,num_lev
                 IF ( m >= n ) THEN
-                    k3(n,m) = runge_k_nm(n,m,t+0.5_DP*h,rho+0.5_DP*k2,  h,field,gma,big_gma,comm,rho_eq)
+                    k3(n,m) = runge_k_nm(n, m, t+0.5_DP*rk_step,              &
+                                         rho+0.5_DP*k2, comm)
                 ENDIF
             ENDDO
         ENDDO
@@ -119,12 +132,14 @@ SUBROUTINE runge
         DO n = 1,num_lev
             DO m =1,num_lev
                 IF ( m >= n ) THEN
-                    k4(n,m) = runge_k_nm(n,m,t+h,rho+k3,  h,field,gma,big_gma,comm,rho_eq)
+                    k4(n,m) = runge_k_nm(n, m, t+rk_step, rho+k3, comm)
                 ENDIF
             ENDDO
         ENDDO
 
         rho = rho + (k1 + (2.0_DP *k2) + (2.0_DP *k3) + k4) / 6.0_DP
+
+        ! Exploiting that p_nm=p_mn*
         DO n = 1,num_lev
             DO m =1,num_lev
                 IF ( m > n ) THEN
@@ -132,8 +147,8 @@ SUBROUTINE runge
                 ENDIF
             ENDDO
         ENDDO
-        t   = t + h
 
+        ! Calculating dipole
         dipole = 0.0_DP
         DO n = 1,num_lev
             DO m = 1,num_lev
@@ -141,8 +156,11 @@ SUBROUTINE runge
             ENDDO
         ENDDO
 
+        ! Next time-step
+        t   = t + rk_step
+
         !! PRINTING VALUES !!
-        WRITE(out_id, charfmat, ADVANCE='NO') t  ! t in a.u.
+        WRITE(out_id, charfmat, ADVANCE='NO') t  
         WRITE(out_id, charfmat, ADVANCE='NO') efield(field, t)
         WRITE(out_id, charfmat, ADVANCE='NO') dipole
         DO j = 1, npos
@@ -153,6 +171,7 @@ SUBROUTINE runge
         ENDDO                                 
         WRITE(out_id,*)
        
+        ! Percentage complete
         pcomp = 100.0*REAL(i)/REAL(npts-1)
         IF (ABS(pcomp-pfrac) <= 1.0E-2) THEN
             WRITE(*,'(A1,A12,I3,A13)',ADVANCE='NO') char(13), &
@@ -160,12 +179,42 @@ SUBROUTINE runge
               pfrac = pfrac+pfraco
         ENDIF
 
-
     ENDDO
 
     CLOSE(out_id)
 
 END SUBROUTINE runge
+
+FUNCTION runge_k_nm(n, m, t, rho, comm)
+        USE double
+        USE fields
+        USE params , ONLY : en, num_lev, gma, big_gma, field, rk_step, field, &
+                            gma, big_gma, ci, rho_eq
+        IMPLICIT NONE
+        COMPLEX(KIND=DP), INTENT(IN), DIMENSION(:,:) :: rho, comm
+        INTEGER, INTENT(IN) :: n, m
+        REAL(KIND=DP), INTENT(IN) :: t
+        COMPLEX(KIND=DP) :: runge_k_nm
+        INTEGER :: j
+
+        runge_k_nm = -ci * (en(n) - en(m)) * rho(n,m)                         &
+                     +ci * efield(field,t) * comm(n,m)                        &
+                     - gma(n,m) * rho(n,m)                                    &
+                     + gma(n,m) * rho_eq(n,m)
+
+        IF ( n == m ) THEN
+            DO j = 1,num_lev
+                IF ( j > n) THEN
+                    runge_k_nm = runge_k_nm + big_gma(n,j)*rho(j,j)
+                ELSEIF ( j < n) THEN
+                    runge_k_nm = runge_k_nm - big_gma(j,n)*rho(n,n)
+                ENDIF
+            ENDDO
+        ENDIF
+
+        runge_k_nm = rk_step * runge_k_nm
+
+END FUNCTION
 
 FUNCTION commute(A, B)
     USE double
@@ -173,8 +222,8 @@ FUNCTION commute(A, B)
     IMPLICIT NONE
     COMPLEX(KIND=DP), INTENT(IN), DIMENSION(:,:) :: A, B
     COMPLEX(KIND=DP), ALLOCATABLE                :: commute(:,:)
-    COMPLEX(KIND=DP) :: y
-    INTEGER                                   :: s, nu, n, m
+    COMPLEX(KIND=DP)                             :: y
+    INTEGER                                      :: s, nu, n, m
 
     s = UBOUND(A,1)
     ALLOCATE(commute(s,s))
@@ -192,38 +241,5 @@ FUNCTION commute(A, B)
 !$OMP  END PARALLEL DO
 
 END FUNCTION commute
-
-FUNCTION runge_k_nm(n,m,t,rho,  h,field,gma,big_gma,comm,rho_eq)
-        USE double
-        USE fields
-        USE params , ONLY : en, num_lev
-        IMPLICIT NONE
-        COMPLEX(KIND=DP), INTENT(IN), DIMENSION(:,:) :: rho, comm, rho_eq
-        REAL(KIND=DP), INTENT(IN), DIMENSION(:,:) :: gma, big_gma
-        INTEGER, INTENT(IN) :: n, m
-        REAL(KIND=DP), INTENT(IN) :: t, h
-        CHARACTER(LEN=*), INTENT(IN) :: field
-        COMPLEX(KIND=DP), PARAMETER :: ci=(0.0_DP,1.0_DP)
-        COMPLEX(KIND=DP) :: runge_k_nm
-        INTEGER :: j
-
-        runge_k_nm = -ci * (en(n) - en(m)) * rho(n,m)   &
-                     +ci * efield(field,t) * comm(n,m)  &
-                     - gma(n,m) * rho(n,m)    &
-                     + gma(n,m) * rho_eq(n,m)
-
-        IF ( n == m ) THEN
-            DO j = 1,num_lev
-                IF ( j > n) THEN
-                    runge_k_nm = runge_k_nm + big_gma(n,j)*rho(j,j)
-                ELSEIF ( j < n) THEN
-                    runge_k_nm = runge_k_nm - big_gma(j,n)*rho(n,n)
-                ENDIF
-            ENDDO
-        ENDIF
-
-        runge_k_nm = h * runge_k_nm
-
-END FUNCTION
 
 END MODULE runge_mod

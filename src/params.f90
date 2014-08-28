@@ -2,130 +2,150 @@ MODULE params
     USE double
     IMPLICIT NONE
     
-    ! imaginary number
+    ! UNIVERSAL PARAMETERS
+    !
+    ! Imaginary number
     COMPLEX(KIND=DP), PARAMETER :: ci = (0.0_DP, 1.0_DP)
     ! pi
-    REAL(KIND=DP), PARAMETER :: pi = 3.1415926535897932
-    ! a.u. of wavelength when given in nm
-    REAL(KIND=DP), PARAMETER :: chi = 45.5633526_DP                            
-    ! a.u. of intensity                                                        
-    REAL(KIND=DP), PARAMETER :: intens_par = 3.50944758E16_DP                  
+    REAL(KIND=DP), PARAMETER    :: pi = 3.1415926535897932
+    ! A.u. of wavelength when given in nm
+    REAL(KIND=DP), PARAMETER    :: wave_par = 45.5633526_DP                            
+    ! A.u. of intensity                                                        
+    REAL(KIND=DP), PARAMETER    :: intens_par = 3.50944758E16_DP                  
     ! Convert laser energy in eV to wavelength in nm                           
-    REAL(KIND=DP), PARAMETER :: energy_par = 1.239841E3_DP                     
-    ! a.u. conversion for time (fs)                                           
-    REAL(KIND=DP), PARAMETER :: time_par = 2.418884326505E-2_DP               
-    ! A.U. CONVERSION FOR LENGTH GIVEN IN NM                                   
-    REAL(KIND=DP), PARAMETER :: length_par = 0.052917721092_DP
+    REAL(KIND=DP), PARAMETER    :: energy_par = 1.239841E3_DP                     
+    ! A.u. conversion for time (fs)                                           
+    REAL(KIND=DP), PARAMETER    :: time_par = 2.418884326505E-2_DP               
+    ! A.u. conversion for length given in nm                                   
+    REAL(KIND=DP), PARAMETER    :: length_par = 0.052917721092_DP
 
-
-    ! USER INPUT VARIABLES FROM FILE
-
+    ! USER INPUT VARIABLES FROM FILE WHICH GET SET WHEN get_params IS CALLED
+    !
+    ! Field parameters
+    !
     ! Input field
     CHARACTER(LEN=256) :: field
     ! Laser freq in eV
-    REAL(KIND=DP) :: omega_ev
+    REAL(KIND=DP)      :: omega_ev
     ! Laser freq in a.u.
-    REAL(KIND=DP) :: omega_au
+    REAL(KIND=DP)      :: omega_au
     ! Laser wavelength in nm
-    REAL(KIND=DP) :: lambda
+    REAL(KIND=DP)      :: lambda
     ! Laser intensity in W/cm2
-    REAL(KIND=DP) :: I0
+    REAL(KIND=DP)      :: I0
     ! Laser amplitude in a.u.
-    REAL(KIND=DP) :: E0
-
+    REAL(KIND=DP)      :: E0
+    !
+    ! Step field parameters
+    !
+    ! Height
+    REAL(KIND=DP)      :: step_height
+    ! Centre
+    REAL(KIND=DP)      :: step_centre
+    ! Width
+    REAL(KIND=DP)      :: step_width
+    !
+    ! Pulse field parameters
+    !
+    ! Start
+    REAL(KIND=DP)      :: pulse_start
+    ! Phase
+    REAL(KIND=DP)      :: pulse_phase
+    ! Number of cycles
+    REAL(KIND=DP)      :: pulse_cycles
+    ! Limit
+    REAL(KIND=DP)      :: pulse_lim
+    !
+    ! Runge-Kutta
+    !
     ! Max propagation time in a.u.
-    REAL(KIND=DP) :: trange_au
+    REAL(KIND=DP)      :: trange_au
     ! No of pts (nptspau+1) used in RK method per atomic unit
-    REAL :: nptspau
-
+    REAL               :: nptspau
+    ! RK step-size
+    REAL(KIND=DP)      :: rk_step
+    ! Total number of points used in propagation
+    INTEGER            :: npts 
+    !
+    ! Directories
+    !
     ! Input directory
     CHARACTER(LEN=256) :: in_folder
     ! Input file
-    CHARACTER(LEN=256) :: in_file='rho_prop.in'
+    CHARACTER(LEN=256) :: in_file
     ! Output directory
     CHARACTER(LEN=256) :: out_folder
     ! Output file
     CHARACTER(LEN=256) :: out_file
-    ! Params file
+    ! Parameters file
     CHARACTER(LEN=256) :: params_file
     ! Job name
     CHARACTER(LEN=256) :: jname
-    ! Error file
+    ! Log file
     CHARACTER(LEN=256) :: log_file='tmp.log'
     ! Time stamp
     CHARACTER(LEN=256) :: timestamp
-
-    INTEGER :: num_lev
-    INTEGER :: npos
-    REAL(KIND=DP), ALLOCATABLE :: en(:)
-    REAL(KIND=DP), ALLOCATABLE :: gma(:,:)
-    REAL(KIND=DP), ALLOCATABLE :: big_gma(:,:)
-    INTEGER, ALLOCATABLE :: positions(:,:)
+    !
+    ! Number of levels in system
+    INTEGER                       :: num_lev
+    ! Number of elements of rho to be output
+    INTEGER                       :: npos
+    ! Energy level vector
+    REAL(KIND=DP), ALLOCATABLE    :: en(:)
+    ! Small gamma
+    REAL(KIND=DP), ALLOCATABLE    :: gma(:,:)
+    ! Big gamma
+    REAL(KIND=DP), ALLOCATABLE    :: big_gma(:,:)
+    ! Matrix of rho elements to be output
+    INTEGER, ALLOCATABLE          :: positions(:,:)
+    ! Input rho_0 matrix
     COMPLEX(KIND=DP), ALLOCATABLE :: rho_0(:,:)
+    ! Input rho_eq matrix
+    COMPLEX(KIND=DP), ALLOCATABLE :: rho_eq(:,:)
+    ! Input mut matrix
     COMPLEX(KIND=DP), ALLOCATABLE :: mu(:,:)
     
 CONTAINS
 
-SUBROUTINE get_params(omega_ev,   &
-                      omega_au,   &
-                      lambda,     &
-                      I0,         &
-                      E0,         &
-                      field,      &
-                      trange_au,  &
-                      nptspau,       &
-                      in_folder,  &
-                      out_folder,  &
-                      timestamp,  &
-                      jname)
+SUBROUTINE get_params
     USE double
     IMPLICIT NONE
     
     ! INPUT-RELATED VARIABLES
     CHARACTER(LEN=256) :: buffer, label
-    INTEGER :: pos
+    INTEGER            :: pos
     INTEGER, PARAMETER :: fh = 15
     INTEGER, PARAMETER :: fh_log = 20
-    INTEGER :: ios = 0
-    INTEGER :: line = 0
-    CHARACTER(LEN=6) :: line_out
-    INTEGER :: today(3), now(3)
-
-    ! CONTROL FILE VARIABLES
-    REAL(KIND=DP), INTENT(OUT) :: omega_ev
-    REAL(KIND=DP), INTENT(OUT) :: omega_au
-    REAL(KIND=DP), INTENT(OUT) :: lambda
-    REAL(KIND=DP), INTENT(OUT) :: I0
-    REAL(KIND=DP), INTENT(OUT) :: E0
-    CHARACTER(LEN=256), INTENT(OUT) :: field
-    REAL(KIND=DP), INTENT(OUT) :: trange_au
-    REAL, INTENT(OUT) :: nptspau
-    CHARACTER(LEN=256), INTENT(OUT) :: in_folder
-    CHARACTER(LEN=256), INTENT(OUT) :: out_folder
-    CHARACTER(LEN=256), INTENT(OUT) :: jname
-    CHARACTER(LEN=256), INTENT(OUT) :: timestamp
-
-    LOGICAL :: ev=.FALSE., nm=.FALSE., au=.FALSE.
+    INTEGER            :: ios = 0
+    INTEGER            :: line = 0
+    CHARACTER(LEN=6)   :: line_out
+    INTEGER            :: today(3), now(3)
+    LOGICAL            :: ev=.FALSE., nm=.FALSE., au=.FALSE.
 
     ! SET DEFAULTS
-    I0 = 1.0_DP
-    field = 'cosfield'
-    trange_au = 1200.0_DP
-    nptspau = 100.0
-    in_folder = '-#error'
-    jname = 'job'
-    out_folder = '.'
+    I0           = 1.0_DP
+    field        = 'cosfield'
+    trange_au    = 1200.0_DP
+    nptspau      = 100.0
+    in_folder    = '-#error'
+    jname        = 'job'
+    out_folder   = '.'
+    step_centre  = 50.0_DP
+    step_width   = 20.0_DP
+    step_height  = 1.0E-8_DP
+    pulse_phase  = 0.0_DP
+    pulse_start  = 0.0_DP
+    pulse_cycles = 6.0_DP
 
-    !! THE PROGRAM !!
-
+    ! SETTING PARAMETERS
     CALL IDATE(today)
     CALL ITIME(now)
 
-    WRITE(timestamp,'("DATE: ",I2,"/",I2,"/",I4,", ",&
+    WRITE(timestamp,'("DATE: ",I2,"/",I2,"/",I4,", ",                         &
                      &"TIME: ",I2,":",I2,":",I2)') today, now
 
-    OPEN(fh, FILE=in_file)
-    OPEN(fh_log, FILE=log_file, STATUS='REPLACE')
+    OPEN(fh, FILE=in_file, STATUS='OLD', ACTION='READ')
+    OPEN(fh_log, FILE=log_file, STATUS='REPLACE', ACTION='WRITE')
 
     WRITE(fh_log,*) TRIM(timestamp)
 
@@ -166,6 +186,7 @@ SUBROUTINE get_params(omega_ev,   &
 
             CASE ('field')
                 READ(buffer, *, IOSTAT=ios) field
+                field = TRIM(field)
                 WRITE(fh_log,*) 'Read "field" successfully.'
 
             CASE ('trange_au')
@@ -189,6 +210,30 @@ SUBROUTINE get_params(omega_ev,   &
                 READ(buffer, *, IOSTAT=ios) jname
                 WRITE(fh_log,*) 'Read "name" successfully.'
 
+            CASE ('step_height')
+                READ(buffer, *, IOSTAT=ios) step_height
+                WRITE(fh_log,*) 'Read "step_height" successfully.'
+
+            CASE ('step_centre')
+                READ(buffer, *, IOSTAT=ios) step_centre
+                WRITE(fh_log,*) 'Read "step_centre" successfully.'
+
+            CASE ('step_width')
+                READ(buffer, *, IOSTAT=ios) step_width
+                WRITE(fh_log,*) 'Read "step_width" successfully.'
+
+            CASE ('pulse_start')
+                READ(buffer, *, IOSTAT=ios) pulse_start
+                WRITE(fh_log,*) 'Read "pulse_start" successfully.'
+
+            CASE ('pulse_cycles')
+                READ(buffer, *, IOSTAT=ios) pulse_cycles
+                WRITE(fh_log,*) 'Read "pulse_cycles" successfully.'
+
+            CASE ('pulse_phase')
+                READ(buffer, *, IOSTAT=ios) pulse_phase
+                WRITE(fh_log,*) 'Read "pulse_phase" successfully.'
+
             CASE DEFAULT
                 WRITE(line_out,'(I5)') line
                 IF ( label(1:1) /= '#') THEN
@@ -205,17 +250,17 @@ SUBROUTINE get_params(omega_ev,   &
 
     IF (ev) THEN
         lambda = energy_par/omega_ev
-        omega_au = chi/lambda
+        omega_au = wave_par/lambda
     ELSEIF (au) THEN
-        lambda = chi/omega_au
+        lambda = wave_par/omega_au
         omega_ev = energy_par/lambda
     ELSEIF (nm) THEN
         omega_ev = energy_par/lambda
-        omega_au = chi/lambda
+        omega_au = wave_par/lambda
     ELSE
         omega_ev = 2.0_DP
         lambda = energy_par/omega_ev
-        omega_au = chi/lambda
+        omega_au = wave_par/lambda
     ENDIF
 
     CLOSE(fh_log)
@@ -225,8 +270,22 @@ SUBROUTINE get_params(omega_ev,   &
         CALL EXIT(0)
     ENDIF
 
+    ! Field calculations
     E0 = SQRT(I0 / intens_par)
+    pulse_lim = 2.0_DP * pi * pulse_cycles / omega_au
     
+    ! Defining RK step size and npts from npstpau
+    rk_step     = 1.0_DP/REAL(nptspau,KIND=DP)
+    npts        = NINT(nptspau * trange_au)
+
+    ! Getting file names
+    params_file = TRIM(out_folder)//'/'//TRIM(jname)//'.params'
+    out_file    = TRIM(out_folder)//'/'//TRIM(jname)//'.out'
+    log_file    = TRIM(out_folder)//'/'//TRIM(jname)//'.log'
+
+    ! Moving the log file to the output directory.
+    CALL SYSTEM('mv tmp.log '//log_file)
+
 END SUBROUTINE get_params
 
 END MODULE params

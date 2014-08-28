@@ -146,9 +146,8 @@ SUBROUTINE get_params
                      &"TIME: ",I2,":",I2,":",I2)') today, now
 
     INQUIRE(FILE=in_file, EXIST=in_exist)
-
     IF ( in_exist .EQV. .FALSE.) THEN
-        WRITE(*,*) 'Not input file detected. Exiting...'
+        WRITE(*,*) 'Error: no input file detected. Exiting...'
         CALL EXIT(1)
     ENDIF
 
@@ -277,6 +276,13 @@ SUBROUTINE get_params
         WRITE(*,*) 'No input folder given. Exiting...'
         CALL EXIT(0)
     ENDIF
+
+    INQUIRE(FILE=in_folder, EXIST=in_exist)
+    IF ( in_exist .EQV. .FALSE.) THEN
+        WRITE(*,*) 'Error: input folder does not exist. Exiting...'
+        CALL EXIT(1)
+    ENDIF
+
 
     ! Field calculations
     E0 = SQRT(I0 / intens_par)

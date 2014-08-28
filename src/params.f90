@@ -121,6 +121,7 @@ SUBROUTINE get_params
     CHARACTER(LEN=6)   :: line_out
     INTEGER            :: today(3), now(3)
     LOGICAL            :: ev=.FALSE., nm=.FALSE., au=.FALSE.
+    LOGICAL            :: in_exist
 
     ! SET DEFAULTS
     I0           = 1.0_DP
@@ -143,6 +144,13 @@ SUBROUTINE get_params
 
     WRITE(timestamp,'("DATE: ",I2,"/",I2,"/",I4,", ",                         &
                      &"TIME: ",I2,":",I2,":",I2)') today, now
+
+    INQUIRE(FILE=in_file, EXIST=in_exist)
+
+    IF ( in_exist .EQV. .FALSE.) THEN
+        WRITE(*,*) 'Not input file detected. Exiting...'
+        CALL EXIT(1)
+    ENDIF
 
     OPEN(fh, FILE=in_file, STATUS='OLD', ACTION='READ')
     OPEN(fh_log, FILE=log_file, STATUS='REPLACE', ACTION='WRITE')

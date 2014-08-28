@@ -65,7 +65,7 @@ FUNCTION au_gamma(omega)
     COMPLEX(KIND=DP)          :: au_gamma
     REAL(KIND=DP), INTENT(IN) :: omega
 
-    au_gamma = (au_di_function(omega) - eps_0)/(2.0_DP*eps_0 +          &
+    au_gamma = (au_di_function(omega) - eps_0)/(2.0_DP*eps_0 +                &
                                                  au_di_function(omega)) 
 
 END FUNCTION au_gamma

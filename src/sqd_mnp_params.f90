@@ -18,8 +18,8 @@ MODULE sqd_mnp_params
 
     ! CALCULATIONS AND UNIT CONVERSIONS
     !
-    REAL(KIND=DP),PARAMETER :: dist = dist_nm/length_par
-    REAL(KIND=DP),PARAMETER :: rad = rad_nm/length_par
+    REAL(KIND=DP), PARAMETER :: dist = dist_nm/length_par
+    REAL(KIND=DP), PARAMETER :: rad = rad_nm/length_par
     REAL(KIND=DP), PARAMETER :: eps_eff1 = (2.0_DP*eps_0 + eps_s)/(3.0_DP*eps_0)
     REAL(KIND=DP), PARAMETER :: eps_eff2 = (2.0_DP*eps_0 + eps_s)/3.0_DP
 

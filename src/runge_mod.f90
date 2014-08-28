@@ -80,9 +80,9 @@ SUBROUTINE runge
     WRITE(out_id, charfmat, ADVANCE='NO') efield(field, t)
     WRITE(out_id, charfmat, ADVANCE='NO') dipole
     DO j = 1, npos
-            WRITE(out_id, charfmat, ADVANCE='NO') &
+            WRITE(out_id, charfmat, ADVANCE='NO')                             &
             REAL(rho(positions(j,1),positions(j,2)),KIND=DP)
-            WRITE(out_id, charfmat, ADVANCE='NO') &
+            WRITE(out_id, charfmat, ADVANCE='NO')                             &
             IMAG(rho(positions(j,1),positions(j,2)))
     ENDDO                                 
     WRITE(out_id,*)
@@ -164,9 +164,9 @@ SUBROUTINE runge
         WRITE(out_id, charfmat, ADVANCE='NO') efield(field, t)
         WRITE(out_id, charfmat, ADVANCE='NO') dipole
         DO j = 1, npos
-                WRITE(out_id, charfmat, ADVANCE='NO') &
+                WRITE(out_id, charfmat, ADVANCE='NO')                         &
                 REAL(rho(positions(j,1),positions(j,2)),KIND=DP)
-                WRITE(out_id, charfmat, ADVANCE='NO') &
+                WRITE(out_id, charfmat, ADVANCE='NO')                         &
                 IMAG(rho(positions(j,1),positions(j,2)))
         ENDDO                                 
         WRITE(out_id,*)
@@ -174,7 +174,7 @@ SUBROUTINE runge
         ! Percentage complete
         pcomp = 100.0*REAL(i)/REAL(npts-1)
         IF (ABS(pcomp-pfrac) <= 1.0E-2) THEN
-            WRITE(*,'(A1,A12,I3,A13)',ADVANCE='NO') char(13), &
+            WRITE(*,'(A1,A12,I3,A13)',ADVANCE='NO') char(13),                 &
                   '||------->  ', NINT(pcomp), '%  <-------||'
               pfrac = pfrac+pfraco
         ENDIF

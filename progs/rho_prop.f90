@@ -53,7 +53,7 @@ PROGRAM rho_prop
     ! Reading in matrices.
     ALLOCATE(                                                                 &
             rho_0(num_lev,num_lev),                                           &
-            rho_eq(num_lev,num_lev),                                           &
+            rho_eq(num_lev,num_lev),                                          &
             en(num_lev),                                                      &
             big_gma(num_lev,num_lev),                                         &
             gma(num_lev,num_lev),                                             &

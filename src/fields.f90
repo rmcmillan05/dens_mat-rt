@@ -84,7 +84,7 @@ FUNCTION e_sqd(t)
     COMPLEX(KIND=DP)          :: gma
 
     gma = au_gamma(omega_au)
-    p_mnp = 0.5_DP*E0*rad**3 * ( REALPART(gma)*COS(omega_au*t)   &
+    p_mnp = 0.5_DP*E0*rad**3 * ( REALPART(gma)*COS(omega_au*t)                &
                                 +IMAGPART(gma)*SIN(omega_au*t) )
     e_sqd = E0*COS(omega_au*t) + s_alpha*p_mnp/eps_eff1/dist**3
 

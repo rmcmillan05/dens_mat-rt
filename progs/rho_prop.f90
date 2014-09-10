@@ -11,7 +11,7 @@ PROGRAM rho_prop
     USE runge_mod , ONLY : runge
     USE print_params_mod , ONLY : print_params
     USE params , ONLY : num_lev, npos, in_folder, in_file, rho_0, en, gma,    &
-                        big_gma, mu, positions, rho_eq, get_params
+                        big_gma, mu, positions, rho_eq, get_params, check_file
     IMPLICIT NONE
 
     ! Names of input matrices.
@@ -38,12 +38,19 @@ PROGRAM rho_prop
 
     ! Reading in matrices
     rho_in      = TRIM(in_folder)//'/rho.txt'
+    CALL check_file(rho_in)
     en_in       = TRIM(in_folder)//'/en.txt'
+    CALL check_file(en_in)
     gma_in      = TRIM(in_folder)//'/gma.txt'
+    CALL check_file(gma_in)
     big_gma_in  = TRIM(in_folder)//'/big_gma.txt'
+    CALL check_file(big_gma_in)
     mu_in       = TRIM(in_folder)//'/mu.txt'
+    CALL check_file(mu_in)
     pos_in      = TRIM(in_folder)//'/positions.txt'
+    CALL check_file(pos_in)
     rho_eq_in   = TRIM(in_folder)//'/rho_eq.txt'
+    CALL check_file(rho_eq_in)
 
     ! Reading number of levels in system by the number of lines in the rho_in
     ! matrix. The number of rho elements to be read is npos.

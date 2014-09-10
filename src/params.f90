@@ -119,9 +119,9 @@ SUBROUTINE get_params
     INTEGER            :: ios = 0
     INTEGER            :: line = 0
     CHARACTER(LEN=6)   :: line_out
-    INTEGER            :: today(3), now(3)
+    CHARACTER(LEN=12)  :: now
+    CHARACTER(LEN=12)  :: today
     LOGICAL            :: ev=.FALSE., nm=.FALSE., au=.FALSE.
-    LOGICAL            :: in_exist
 
     ! SET DEFAULTS
     I0           = 1.0_DP
@@ -139,17 +139,11 @@ SUBROUTINE get_params
     pulse_cycles = 6.0_DP
 
     ! SETTING PARAMETERS
-    CALL IDATE(today)
-    CALL ITIME(now)
 
-    WRITE(timestamp,'("DATE: ",I2,"/",I2,"/",I4,", ",                         &
-                     &"TIME: ",I2,":",I2,":",I2)') today, now
+    CALL DATE_AND_TIME(DATE=today, TIME=now)
+    timestamp = TRIM(today)//', '//TRIM(now(1:6))
 
-    INQUIRE(FILE=in_file, EXIST=in_exist)
-    IF ( in_exist .EQV. .FALSE.) THEN
-        WRITE(*,*) 'Error: no input file detected. Exiting...'
-        CALL EXIT(1)
-    ENDIF
+    CALL check_file(in_file)
 
     OPEN(fh, FILE=in_file, STATUS='OLD', ACTION='READ')
     OPEN(fh_log, FILE=log_file, STATUS='REPLACE', ACTION='WRITE')
@@ -277,13 +271,6 @@ SUBROUTINE get_params
         CALL EXIT(0)
     ENDIF
 
-    INQUIRE(FILE=in_folder, EXIST=in_exist)
-    IF ( in_exist .EQV. .FALSE.) THEN
-        WRITE(*,*) 'Error: input folder does not exist. Exiting...'
-        CALL EXIT(1)
-    ENDIF
-
-
     ! Field calculations
     E0 = SQRT(I0 / intens_par)
     pulse_lim = 2.0_DP * pi * pulse_cycles / omega_au
@@ -301,5 +288,18 @@ SUBROUTINE get_params
     CALL SYSTEM('mv tmp.log '//log_file)
 
 END SUBROUTINE get_params
+
+SUBROUTINE check_file(the_file)
+    IMPLICIT NONE
+    CHARACTER(LEN=*), INTENT(IN) :: the_file
+    LOGICAL :: in_exist
+
+    INQUIRE(FILE=the_file, EXIST=in_exist)
+    IF ( in_exist .EQV. .FALSE.) THEN
+        WRITE(*,*) 'Error: file '//TRIM(the_file)//' does not exist. Exiting...'
+        CALL EXIT(1)
+    ENDIF
+
+END SUBROUTINE check_file
 
 END MODULE params

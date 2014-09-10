@@ -4,7 +4,8 @@ FILE='Makefile'
 
 COMP='gfortran'
 GNU_FFLAGS=' -O3 -fopenmp -Wall -Wextra -Wconversion -pedantic'
-INTEL_FFLAGS=' -O3 -fopenmp'
+INTEL_FFLAGS=' -O3 -fopenmp '
+LIBS='-llapack -lblas'
 
 # PASSED OPTIONS
 VERB='@'
@@ -30,9 +31,10 @@ To modify options, export variables:
     F90     = [gfortran]
     FFLAGS  = [-O3 -fopenmp -Wall -Wextra -Wconversion -pedantic] (for gfortran)
             = [-O3 -fopenmp] (for ifort)
+    LIB     = [] (paths for external libraries: lapack and blas are required)
     PROGDIR = [./progs] (where main programs to compile are located)
     SRCDIR  = [./src]   (where source/module files are located)
-    BINDIR  = [./bin]   (where executables will be stored)
+    BINDIR  = [./bin/\$F90]   (where executables will be stored)
 
 Main programs are stored in ./progs directory which currently contains
 > rho_prop.f90
@@ -68,6 +70,9 @@ fi
 : ${SRCDIR:='src'}
 : ${BINDIR:='bin'}
 : ${F90:=$COMP}
+: ${LIB:=''}
+
+BINDIR=${BINDIR}/${F90}
 
 shopt -s extglob
 PROGDIR_=${PROGDIR%%+(/)}
@@ -75,6 +80,12 @@ SRCDIR_=${SRCDIR%%+(/)}
 BINDIR_=${BINDIR%%+(/)}
 
 rm -r $SRCDIR_/*.o $PROGDIR_/*.o 2>/dev/null
+
+if [ "$LIB" == "" ]; then
+    LIB_FLAG=""
+else
+    LIB_FLAG="-L${LIB/:/ -L}"
+fi
 
 if [ "$F90" == "gfortran" ]; then
     : ${FFLAGS:=$GNU_FFLAGS}
@@ -121,6 +132,8 @@ echo '# COMPILER AND OPTIONS' >> $FILE
 echo 'F90 = '$F90 >> $FILE
 echo 'FFLAGS = '$FFLAGS >> $FILE
 echo 'LFLAG = '$LFLAG >> $FILE
+echo 'LIB_FLAG = '$LIB_FLAG >> $FILE
+echo 'LIBS = '$LIBS >> $FILE
 echo >> $FILE
 
 echo '# WHERE SOURCE FILES ARE LOCATED' >> $FILE
@@ -143,7 +156,7 @@ for i in $(seq $TOT); do
 	echo -e '\t@if [ ! -e $(BINDIR) ]; then mkdir -p $(BINDIR); fi' >> $FILE
     echo -e "\t@echo '----------------------'" >> $FILE
     echo -e "\t@echo 'Linking '${EXEC[$((i-1))]}" >> $FILE
-    echo -e '\t'$VERB'$(F90) $(FFLAGS) -o '${PNAME[$((i-1))]}' '${PROG[$((i-1))]}' $(MODOBJ)' >> $FILE
+    echo -e '\t'$VERB'$(F90) $(FFLAGS) -o '${PNAME[$((i-1))]}' '${PROG[$((i-1))]}' $(MODOBJ) $(LIB_FLAG) $(LIBS)' >> $FILE
     echo -e "\t@echo '----------------------'" >> $FILE
     echo >> $FILE
 done
@@ -152,9 +165,9 @@ echo '# COMPILING MODULES' >> $FILE
 echo '%.o:%.f90' >> $FILE
 echo -e '\t@if [ ! -e $(MODDIR) ]; then mkdir -p $(MODDIR); fi' >> $FILE
 echo -e "\t@echo 'Compiling \$<'" >> $FILE
-echo -e '\t'$VERB'$(F90) $(FFLAGS) -c $< -o $@ $(LFLAG) $(MODDIR)' >> $FILE
+echo -e '\t'$VERB'$(F90) $(FFLAGS) -c $< -o $@ $(LFLAG) $(MODDIR) ' >> $FILE
 echo >> $FILE
 
 echo '# CLEANING UP' >> $FILE
 echo 'clean:' >> $FILE
-echo -e '\t rm -fr $(MODDIR) $(BINDIR) $(SRCDIR)/*.o $(PROGDIR)/*.o' >> $FILE
+echo -e '\t rm -fr *.mod $(MODDIR) $(BINDIR) $(SRCDIR)/*.o $(PROGDIR)/*.o' >> $FILE

@@ -1,0 +1,13 @@
+## Folder containing input files en.txt, mu.txt, etc.
+in_file   'field.dat'
+## 
+start_from   0.0
+##
+go_to   50.0
+max_order   2
+calc_diffs  .FALSE.
+use_max_freq  .TRUE.
+out_folder './out/blah'
+name 'myjob'
+num_freqs 1
+freqs 1.0

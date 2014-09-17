@@ -1,13 +1,13 @@
 ## Folder containing input files en.txt, mu.txt, etc.
 in_folder  './DATA/data_2level/'
 ## Name of job
-name  'test1'
+name  'test'
 ## Folder where output files name.out and name.params are stored
 out_folder  './out/'          
-## Type of field. Choose from: cosfield/sinfield/zero/step/pulseo
+## Type of field. Choose from: cosfield/sinfield/zero/step/pulse
 field  cosfield
 ## Max propagation time in atomic units
-trange_au  5000
+trange_au  10000
 ## No. of points per atomic unit (npts+1 used) in RK method
 nptspau  5
 ## Laser frequency. Choose one of the following flags: omega_ev/omega_au/lambda

@@ -18,9 +18,18 @@ MODULE global_params
     REAL(KIND=DP), PARAMETER    :: time_par = 2.418884326505E-2_DP               
     ! A.u. conversion for length given in nm                                   
     REAL(KIND=DP), PARAMETER    :: length_par = 0.052917721092_DP
+
+    ! FOR TEXT OUTPUT
     ! Standard error number
     INTEGER, PARAMETER :: std_err = 0
     ! Standard output number
     INTEGER, PARAMETER :: std_out = 6
+    !
+    INTEGER, PARAMETER :: full_wd=80
+    !
+    CHARACTER(LEN=5), PARAMETER :: char_fmt = '(A80)'
+    ! Message string holder
+    CHARACTER(LEN=full_wd) :: tmp_msg
+    
 
 END MODULE global_params

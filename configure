@@ -79,7 +79,11 @@ PROGDIR_=${PROGDIR%%+(/)}
 SRCDIR_=${SRCDIR%%+(/)}
 BINDIR_=${BINDIR%%+(/)}
 
-rm -r $SRCDIR_/*.o $PROGDIR_/*.o 2>/dev/null
+# Linear response sh script
+LRPROG=${BINDIR_}/lin_resp.exe
+LRSRC=${SRCDIR_}/non-fortran/lin_resp.sh
+
+rm -rf $SRCDIR_/*.o $PROGDIR_/*.o
 
 if [ "$LIB" == "" ]; then
     LIB_FLAG=""
@@ -142,11 +146,11 @@ echo 'SRCOBJ = $(wildcard $(SRCDIR)/*f90)' >> $FILE
 echo 'MODOBJ = $(SRCOBJ:.f90=.o)' >> $FILE
 echo >> $FILE
 
-echo 'all: '${PNAME[*]} >> $FILE
+echo 'all: '${PNAME[*]} $LRPROG >> $FILE
 echo >> $FILE
 
 echo '# MODULE DEPENDENCIES' >> $FILE
-${SRCDIR_}/check_dependencies $SRCDIR_ >> $FILE
+${SRCDIR_}/non-fortran/check_dependencies $SRCDIR_ >> $FILE
 
 echo >> $FILE
 
@@ -160,6 +164,15 @@ for i in $(seq $TOT); do
     echo -e "\t@echo '----------------------'" >> $FILE
     echo >> $FILE
 done
+
+echo '# LINKING lin_resp' >> $FILE
+    echo "${LRPROG}: ${LRSRC}" >> $FILE
+    echo -e "\t@echo '----------------------'" >> $FILE
+    echo -e "\t@echo 'Linking lin_resp'" >> $FILE
+    echo -e "\t@sed \"s/F90/$F90/\" $LRSRC > $LRPROG" >> $FILE
+    echo -e "\t@chmod u+x $LRPROG" >> $FILE
+    echo -e "\t@echo '----------------------'" >> $FILE
+    echo >> $FILE
 
 echo '# COMPILING MODULES' >> $FILE
 echo '%.o:%.f90' >> $FILE

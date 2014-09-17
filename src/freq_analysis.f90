@@ -8,6 +8,7 @@ SUBROUTINE get_freq_amp(field_in,                                             &
                         t_in,                                                 &
                         freqs_in,                                             &
                         freqs_out,                                            &
+                        exp_coeff,                                            &
                         cos_coeff,                                            &
                         sin_coeff,                                            &
                         t_out_ids,                                                &
@@ -15,7 +16,7 @@ SUBROUTINE get_freq_amp(field_in,                                             &
                         max_err)
     USE double
     USE print_mat_mod
-    USE global_params , ONLY : ci, pi
+    USE global_params , ONLY : ci, pi, std_err
     USE post_proc_params , ONLY : start_from, go_to, use_max_freq
     IMPLICIT NONE
 
@@ -23,6 +24,7 @@ SUBROUTINE get_freq_amp(field_in,                                             &
     REAL(KIND=DP), INTENT(IN) :: t_in(:)
     REAL(KIND=DP), INTENT(INOUT) :: freqs_in(:)
 
+    COMPLEX(KIND=DP), ALLOCATABLE, INTENT(OUT) :: exp_coeff(:)
     REAL(KIND=DP), INTENT(OUT) :: field_approx(SIZE(t_in))
     REAL(KIND=DP), INTENT(OUT) :: max_err
     COMPLEX(KIND=DP), ALLOCATABLE :: field (:,:)
@@ -35,9 +37,12 @@ SUBROUTINE get_freq_amp(field_in,                                             &
     REAL(KIND=DP), ALLOCATABLE :: t_tmp(:)
     REAL(KIND=DP) :: dt
     REAL(KIND=DP) :: min_period
+    CHARACTER(LEN=20) :: gt_char_o, gt_char_n
+    REAL(KIND=DP) :: dt_in
 
     INTEGER :: nf ! Number of frequencies
     INTEGER :: i, j
+    INTEGER :: s_id, e_id
 
     REAL(KIND=DP), ALLOCATABLE, INTENT(OUT) :: cos_coeff(:)
     REAL(KIND=DP), ALLOCATABLE, INTENT(OUT) :: sin_coeff(:)
@@ -52,18 +57,38 @@ SUBROUTINE get_freq_amp(field_in,                                             &
     ALLOCATE( t_out_ids(nf) )
 
     min_period= 2.0_DP*pi/MAXVAL(freqs_out)
+    dt_in = t_in(2) - t_in(1)
 
     IF ( use_max_freq ) THEN
         go_to = start_from + 0.95_DP*min_period
     ENDIF
 
     CALL linspace(start_from, go_to, nf, t_tmp, dt)
+
+    IF ( dt < dt_in ) THEN
+        WRITE(gt_char_o, '(F16.12)') go_to
+        CALL print_str('Warning: dt is too large for optimal frequency &
+                       &resolution. Increasing "go_to"...')
+        DO WHILE ( dt < dt_in ) 
+            go_to = go_to + min_period
+            CALL linspace(start_from, go_to, nf, t_tmp, dt)
+        ENDDO
+        WRITE(gt_char_n, '(F16.12)') go_to
+        CALL print_str('"go_to" changed from '//gt_char_o//&
+                       &' to '//TRIM(ADJUSTL(gt_char_n)), std_err)
+    ENDIF
+
+    IF ( go_to > t_in(SIZE(t_in)) ) THEN
+        CALL print_str('Warning: "go_to" is greater than the maximum value of &
+                       &t.')
+    ENDIF
+
     CALL find_closest(t_in, start_from, t_out(1), t_out_ids(1))
 
     DO i = 2, nf
         CALL find_closest(t_in, t_tmp(i), t_out(i), t_out_ids(i))
         IF ( t_out_ids(i) == t_out_ids(i-1) ) THEN
-            WRITE(0,*) 'Error: singular matrix inversion.'
+            CALL print_str('Error: singular matrix inversion. Exiting...')
             CALL EXIT(1)
         ENDIF
     ENDDO
@@ -88,7 +113,16 @@ SUBROUTINE get_freq_amp(field_in,                                             &
         ENDDO
     ENDDO
 
-    max_err = MAXVAL(ABS(field_approx - field_in))
+    ALLOCATE( exp_coeff(SIZE(coeff)) )
+    exp_coeff = coeff(:,1)
+
+    s_id = t_out_ids(1)
+    e_id = SIZE(t_in)
+
+    max_err = MAXVAL(ABS(field_approx(s_id:e_id) - field_in(s_id:e_id))) /                          &
+              (MAXVAL(ABS(field_in(s_id:e_id)))                               &
+              -MINVAL(ABS(field_in(s_id:e_id))))
+    max_err = max_err*100.0_DP
 
     nf = (nf-1)/2+1
 
@@ -164,19 +198,20 @@ SUBROUTINE remove_duplicates(a_in, a_out)
 
     a_tmp = 0.0_DP
     k = 1
-    a_tmp(1) = a_in(1)
 
-outer: DO i = 2, SIZE(a_in)
+outer: DO i = 1, SIZE(a_in)
         DO j = 1,k
-            IF ( ABS(a_in(i)-a_tmp(j)) <= tol ) THEN
+            IF ( a_in(i) <= tol ) THEN ! Also remove 0
                 CYCLE outer
-            ELSEIF ( a_in(i) <= tol ) THEN ! Also remove 0
+            ELSEIF ( ABS(a_in(i)-a_tmp(j)) <= tol ) THEN
                 CYCLE outer
             ENDIF
         ENDDO
-        k = k + 1
         a_tmp(k) = a_in(i)
+        k = k + 1
     ENDDO outer
+    
+    k = k-1
 
     ALLOCATE( a_out(k) )
     a_out = a_tmp(1:k)
@@ -228,7 +263,7 @@ END SUBROUTINE add_neg
 
 SUBROUTINE lin_sys(A, B, X)
     USE double
-    USE print_mat_mod
+    USE print_mat_mod , ONLY : print_str
     IMPLICIT NONE
 
     COMPLEX(KIND=DP), INTENT(IN) :: A(:,:)
@@ -251,7 +286,7 @@ SUBROUTINE lin_sys(A, B, X)
     CALL ZGESV(n, nrhs, A_new, n, ipiv, X, n, info)
 
     IF ( info /= 0 ) THEN
-        STOP 'Error: no solution to linear system of equations.'
+        CALL print_str('Error: no solution to linear system of equations.')
     ENDIF
 
 END SUBROUTINE lin_sys

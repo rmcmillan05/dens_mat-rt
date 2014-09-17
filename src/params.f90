@@ -61,7 +61,7 @@ MODULE params
     ! Max propagation time in a.u.
     REAL(KIND=DP)      :: trange_au
     ! No of pts (nptspau+1) used in RK method per atomic unit
-    REAL               :: nptspau
+    REAL(KIND=DP)               :: nptspau
     ! RK step-size
     REAL(KIND=DP)      :: rk_step
     ! Total number of points used in propagation
@@ -141,7 +141,9 @@ SUBROUTINE get_params
     ! SETTING PARAMETERS
 
     CALL DATE_AND_TIME(DATE=today, TIME=now)
-    timestamp = TRIM(today)//', '//TRIM(now(1:6))
+    today = today(7:8)//'/'//today(5:6)//'/'//today(1:4)
+    now = now(1:2)//':'//now(3:4)//':'//now(5:6)
+    timestamp = TRIM(today)//', '//TRIM(now)
 
     CALL check_file(in_file)
 

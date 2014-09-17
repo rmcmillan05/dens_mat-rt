@@ -28,7 +28,7 @@ SUBROUTINE runge
     REAL(KIND=DP)                                 :: dipole
     !
     ! Title format specifier
-    CHARACTER(LEN=64)                             :: charfmat = '(ES16.8)'
+    CHARACTER(LEN=64)                             :: charfmat = '(ES22.14)'
     ! Title for rho element column
     CHARACTER(LEN=2)                              :: poschar
     ! Title for field column

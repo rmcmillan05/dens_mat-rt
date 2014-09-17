@@ -1,0 +1,35 @@
+## Folder where output files stored. This will contain jobs with names given by 
+## the frequency inputs along with the lr output file chi1.dat
+out_folder  './lr-out/'
+## Lower bound of frequency range
+freq_min  2.45
+## Upper bound of frequency range
+freq_max  2.55
+## Step size between frequencies
+step  0.0025
+
+##------------------------------------------------------------------------------
+## propagation calculation parameters
+##------------------------------------------------------------------------------
+## Folder containing input files en.txt, mu.txt, etc.
+in_folder  './DATA/data_2level/'
+## Type of field. Choose from: cosfield/sinfield/zero/step/pulse
+field  cosfield
+## Max propagation time in atomic units
+trange_au  10000
+## No. of points per atomic unit (npts+1 used) in RK method
+nptspau  5
+## Laser intensity in W/cm2
+I0  1.0
+
+##------------------------------------------------------------------------------
+## post processing parameters
+##------------------------------------------------------------------------------
+## Start the processing from this point [default start_from=0.0]
+start_from  4000
+## Process up to this point [no default]
+go_to  10000
+## If use_max_freq is true, then "go_to" is calculated from the maximum
+## frequency (minimum period) present, otherwise "go_to" is used [default
+## use_max_freq=.TRUE.]
+use_max_freq  .TRUE.

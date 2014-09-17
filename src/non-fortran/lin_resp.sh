@@ -41,7 +41,7 @@ for freq in `seq $from $step $to`; do
     echo "name  '$freq'" >> $INFILE.tmp
 
     echo "Processing frequency $freq ..."
-    ./bin/F90/rho_prop.exe $INFILE.tmp > /dev/null
+    ./bin/F90/rho_prop.exe $INFILE.tmp
 
     nf=1
 # Uncomment this section to gather the energy_differences from the parameters

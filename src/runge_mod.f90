@@ -218,7 +218,6 @@ END FUNCTION
 
 FUNCTION commute(A, B)
     USE double
-    USE omp_lib
     IMPLICIT NONE
     COMPLEX(KIND=DP), INTENT(IN), DIMENSION(:,:) :: A, B
     COMPLEX(KIND=DP), ALLOCATABLE                :: commute(:,:)
@@ -228,7 +227,6 @@ FUNCTION commute(A, B)
     s = UBOUND(A,1)
     ALLOCATE(commute(s,s))
 
-!$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(n,m,nu,y) SCHEDULE(DYNAMIC)
     DO n = 1,s
         DO m = 1,s
             y = (0.0_DP, 0.0_DP)
@@ -238,7 +236,6 @@ FUNCTION commute(A, B)
             commute(n,m) = y
         ENDDO
     ENDDO
-!$OMP  END PARALLEL DO
 
 END FUNCTION commute
 

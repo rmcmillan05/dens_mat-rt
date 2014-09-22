@@ -15,6 +15,7 @@ SUBROUTINE print_params
                         step_centre, step_width, step_height,                 &
                         pulse_start, pulse_cycles, pulse_phase
     USE print_mat_mod
+    USE params , ONLY : dist, s_alpha, theta, eps_eff1, omega_g, gamma_g
     IMPLICIT NONE
     
     ! Current working directory
@@ -52,6 +53,17 @@ SUBROUTINE print_params
             CALL print_str_num_real('Laser Intenstiy (W/cm^2)', I0, fid)
             CALL print_str_num_real('Laser Amplitude (E0) (a.u.)', E0, fid)
         ENDIF
+
+        WRITE(fid,*)
+        CALL print_str_num_real('Gold plasmon resonance (a.u.)', omega_g, fid)
+        CALL print_str_num_real('Gold gamma (a.u.)', gamma_g, fid)
+        CALL print_str_num_real('R (a.u.)', dist, fid)
+        CALL print_str_num_real('s_alpha (a.u.)', s_alpha, fid)
+        CALL print_str_num_complex('theta (a.u.)', theta, fid)
+        CALL print_str_num_real('eps_eff1 (a.u.)', eps_eff1, fid)
+        CALL print_str_num_real('strength of eff. field', s_alpha*AIMAG(theta) &
+                                                         /(eps_eff1*dist**3),  &
+                                                        fid)
 
         WRITE(fid, *)
         CALL print_break(fid)

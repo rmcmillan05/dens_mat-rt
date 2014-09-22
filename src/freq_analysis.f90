@@ -37,8 +37,9 @@ SUBROUTINE get_freq_amp(field_in,                                             &
     REAL(KIND=DP), ALLOCATABLE :: t_tmp(:)
     REAL(KIND=DP) :: dt
     REAL(KIND=DP) :: min_period
-    CHARACTER(LEN=20) :: gt_char_o, gt_char_n
+    CHARACTER(LEN=20) :: gt_char_o, gt_char_n, max_err_char
     REAL(KIND=DP) :: dt_in
+    REAL(KIND=DP), PARAMETER :: max_err_tol = 1.0_DP
 
     INTEGER :: nf ! Number of frequencies
     INTEGER :: i, j
@@ -123,6 +124,12 @@ SUBROUTINE get_freq_amp(field_in,                                             &
               (MAXVAL(ABS(field_in(s_id:e_id)))                               &
               -MINVAL(ABS(field_in(s_id:e_id))))
     max_err = max_err*100.0_DP
+
+    IF ( max_err >= max_err_tol ) THEN
+        WRITE(max_err_char, '(F8.2)') max_err
+        CALL print_str('Warning: maximum error very large (~'//               &
+                       TRIM(ADJUSTL(max_err_char))//'%)')
+    ENDIF
 
     nf = (nf-1)/2+1
 

@@ -13,6 +13,7 @@ MODULE post_proc_params
     LOGICAL :: c_diffs
     LOGICAL :: use_max_freq
     INTEGER :: read_col
+    !
     ! Directories
     !
     ! Input file
@@ -37,6 +38,7 @@ CONTAINS
 SUBROUTINE get_params_pp
     USE double
     USE print_mat_mod , ONLY : print_str
+    USE global_params , ONLY : length_par
     IMPLICIT NONE
     
     ! INPUT-RELATED VARIABLES
@@ -49,7 +51,7 @@ SUBROUTINE get_params_pp
     CHARACTER(LEN=8)   :: line_out
     CHARACTER(LEN=12)  :: now
     CHARACTER(LEN=12)  :: today
-    CHARACTER(LEN=256) :: ignore(9)
+    CHARACTER(LEN=256) :: ignore(18)
 
     ! SET DEFAULTS
     start_from = 0.0_DP
@@ -67,15 +69,25 @@ SUBROUTINE get_params_pp
     ! SETTING PARAMETERS
     
     ! Inputs to ignore in input file
-    ignore(1) = 'freq_max'
-    ignore(2) = 'freq_min'
-    ignore(3) = 'step'
-    ignore(4) = 'in_folder'
-    ignore(5) = 'field'
-    ignore(6) = 'trange_au'
-    ignore(7) = 'nptspau'
-    ignore(8) = 'I0'
-    ignore(9) = 'omega_ev'
+    ignore  = (/'freq_max    ',                                                    &
+                'freq_min    ',                                                    &
+                'step        ',                                                        &
+                'in_folder   ',                                                   &
+                'field       ',                                                       &
+                'trange_au   ',                                                   &
+                'nptspau     ',                                                     &
+                'I0          ',                                                          &
+                'omega_ev    ',                                                    &
+                'chi_out     ',                                                     &
+                'dist_nm     ',                                                     &
+                'rad_nm      ',                                                      &
+                's_alpha     ',                                                     &
+                'eps_s       ',                                                       &
+                'eps_0       ',                                                       &
+                'theta       ',                                                       &
+                'omega_g     ',                                                     &
+                'gamma_g     '                                                      &
+              /)
 
     CALL DATE_AND_TIME(DATE=today, TIME=now)
     timestamp = TRIM(today)//', '//TRIM(now(1:6))

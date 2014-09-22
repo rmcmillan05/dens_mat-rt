@@ -2,23 +2,6 @@ MODULE params
     USE double
     IMPLICIT NONE
     
-    ! UNIVERSAL PARAMETERS
-    !
-    ! Imaginary number
-    COMPLEX(KIND=DP), PARAMETER :: ci = (0.0_DP, 1.0_DP)
-    ! pi
-    REAL(KIND=DP), PARAMETER    :: pi = 3.1415926535897932
-    ! A.u. of wavelength when given in nm
-    REAL(KIND=DP), PARAMETER    :: wave_par = 45.5633526_DP                            
-    ! A.u. of intensity                                                        
-    REAL(KIND=DP), PARAMETER    :: intens_par = 3.50944758E16_DP                  
-    ! Convert laser energy in eV to wavelength in nm                           
-    REAL(KIND=DP), PARAMETER    :: energy_par = 1.239841E3_DP                     
-    ! A.u. conversion for time (fs)                                           
-    REAL(KIND=DP), PARAMETER    :: time_par = 2.418884326505E-2_DP               
-    ! A.u. conversion for length given in nm                                   
-    REAL(KIND=DP), PARAMETER    :: length_par = 0.052917721092_DP
-
     ! USER INPUT VARIABLES FROM FILE WHICH GET SET WHEN get_params IS CALLED
     !
     ! Field parameters
@@ -35,6 +18,28 @@ MODULE params
     REAL(KIND=DP)      :: I0
     ! Laser amplitude in a.u.
     REAL(KIND=DP)      :: E0
+    !
+    ! SQD_MNP
+    !
+    ! Distance of centres between MNP and SQD in nm
+    REAL(KIND=DP) :: dist_nm
+    ! Radius of MNP in nm
+    REAL(KIND=DP) :: rad_nm
+    ! s_alpha = 2 for z-axis, -1 for x,y (z is axis of molecule)
+    REAL(KIND=DP) :: s_alpha
+    ! Dielectric constant of background medium
+    REAL(KIND=DP) :: eps_0
+    ! Dielectric constant of SQD
+    REAL(KIND=DP) :: eps_s
+
+    REAL(KIND=DP) :: dist
+    REAL(KIND=DP) :: rad
+    REAL(KIND=DP) :: eps_eff1
+    REAL(KIND=DP) :: eps_eff2
+
+    COMPLEX(KIND=DP) :: theta
+    REAL(KIND=DP) :: omega_g
+    REAL(KIND=DP) :: gamma_g
     !
     ! Step field parameters
     !
@@ -109,6 +114,8 @@ CONTAINS
 
 SUBROUTINE get_params
     USE double
+    USE post_proc_params , ONLY : param_read_success
+    USE global_params , ONLY : wave_par, energy_par, intens_par, length_par, pi
     IMPLICIT NONE
     
     ! INPUT-RELATED VARIABLES
@@ -137,6 +144,16 @@ SUBROUTINE get_params
     pulse_phase  = 0.0_DP
     pulse_start  = 0.0_DP
     pulse_cycles = 6.0_DP
+
+    dist_nm = 20.0_DP
+    rad_nm = 7.5_DP
+    s_alpha = 2.0_DP
+    eps_0 = 1.0_DP
+    eps_s = 6.0_DP
+    theta = (0.0_DP, 7200.0_DP)
+    omega_g = 0.091873378521923_DP
+    gamma_g = 0.00008_DP
+
 
     ! SETTING PARAMETERS
 
@@ -167,6 +184,38 @@ SUBROUTINE get_params
             buffer = buffer(pos+1:)
 
             SELECT CASE (label)
+
+            CASE ('gamma_g')
+                READ(buffer, *, IOSTAT=ios) gamma_g
+                CALL param_read_success('gamma_g',fh_log)
+
+            CASE ('omega_g')
+                READ(buffer, *, IOSTAT=ios) omega_g
+                CALL param_read_success('omega_g',fh_log)
+
+            CASE ('theta')
+                READ(buffer, *, IOSTAT=ios) theta
+                CALL param_read_success('theta',fh_log)
+
+            CASE ('eps_0')
+                READ(buffer, *, IOSTAT=ios) eps_0
+                CALL param_read_success('eps_0',fh_log)
+
+            CASE ('eps_s')
+                READ(buffer, *, IOSTAT=ios) eps_s
+                CALL param_read_success('eps_s',fh_log)
+
+            CASE ('s_alpha')
+                READ(buffer, *, IOSTAT=ios) s_alpha
+                CALL param_read_success('s_alpha',fh_log)
+
+            CASE ('rad_nm')
+                READ(buffer, *, IOSTAT=ios) rad_nm
+                CALL param_read_success('rad_nm',fh_log)
+
+            CASE ('dist_nm')
+                READ(buffer, *, IOSTAT=ios) dist_nm
+                CALL param_read_success('dist_nm',fh_log)
 
             CASE ('omega_ev')
                 READ(buffer, *, IOSTAT=ios) omega_ev
@@ -276,6 +325,12 @@ SUBROUTINE get_params
     ! Field calculations
     E0 = SQRT(I0 / intens_par)
     pulse_lim = 2.0_DP * pi * pulse_cycles / omega_au
+
+    dist = dist_nm/length_par
+    rad = rad_nm/length_par
+    eps_eff1 = (2.0_DP*eps_0 + eps_s)/(3.0_DP*eps_0)
+    eps_eff2 = (2.0_DP*eps_0 + eps_s)/3.0_DP
+
     
     ! Defining RK step size and npts from npstpau
     rk_step     = 1.0_DP/REAL(nptspau,KIND=DP)

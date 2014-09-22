@@ -10,39 +10,83 @@ if [ ! -e $INFILE ]; then
     exit 1
 fi
 
-FOLDER=`grep 'out_folder' $INFILE`
+FOLDER=`grep '^out_folder\s' $INFILE`
 FOLDER=${FOLDER##* }
 FOLDER=${FOLDER#\'}
 FOLDER=${FOLDER%\'}
 
-from=`grep 'freq_min' $INFILE`
+from=`grep '^freq_min\s' $INFILE`
 from=${from##* }
 
-to=`grep 'freq_max' $INFILE`
+to=`grep '^freq_max\s' $INFILE`
 to=${to##* }
 
-step=`grep 'step ' $INFILE`
+step=`grep '^step\s' $INFILE`
 step=${step##* }
 
+CHIOUT=`grep '^chi_out\s' $INFILE`
+CHIOUT=${CHIOUT##* }
+CHIOUT=${CHIOUT#\'}
+CHIOUT=${CHIOUT%\'}.chi1
+
 cat $INFILE > $INFILE.tmp1
-echo "read_col  3" >> $INFILE.tmp1
 echo "max_order  1" >> $INFILE.tmp1
 echo "calc_diffs  .TRUE." >> $INFILE.tmp1
 
-FILE=$FOLDER/chi1.dat
-rm -f $FILE
+FILE=$FOLDER/$CHIOUT
+
+if [ -e $FOLDER ]; then
+    echo -n 'Do you want to generate new data? (Y/n) '
+    read GD
+fi
+
+FREQS=`seq $from $step $to`
+
+if [[ "$GD" != 'n' ]]; then
+    if [ -e $FILE ]; then
+        echo -n 'Process all files in folder or just those generated? (a/G)'
+        read PRO
+    fi
+
+    echo 'Generating data...'
+    echo
+    for freq in $FREQS; do
+
+        cat $INFILE.tmp1 > $INFILE.tmp
+        echo "omega_ev  $freq" >> $INFILE.tmp
+        echo "name  '$freq'" >> $INFILE.tmp
+
+        echo "Generating frequency $freq ..."
+        if [[ "$EXISTS" != 'y' ]]; then
+            ./bin/F90/rho_prop.exe $INFILE.tmp
+        fi
+
+    done
+fi
+
+echo
+echo 'Post-processing...'
+
+if [ ! -e $FILE ]; then
+    HEAD='yes'
+fi
+
+if [[ "$PRO" == 'a' ]]; then
+    FREQS=`ls $FOLDER/*.out`
+fi
 
 i=0
-for freq in `seq $from $step $to`; do
+for freq in $FREQS; do
     i=$((i+1))
-
+    
     cat $INFILE.tmp1 > $INFILE.tmp
-    echo "omega_ev  $freq" >> $INFILE.tmp
+    freq=${freq##*$FOLDER}
+    freq=${freq##*/}
+    freq=${freq%*.out}
     echo "name  '$freq'" >> $INFILE.tmp
 
-    echo "Processing frequency $freq ..."
-    ./bin/F90/rho_prop.exe $INFILE.tmp
-
+    FFF=`grep 'Laser Freq' $FOLDER/${freq}.params`
+    FFF=${FFF##* }
     nf=1
 # Uncomment this section to gather the energy_differences from the parameters
 # file. These frequencies will also be included in the process. However, if
@@ -60,24 +104,33 @@ for freq in `seq $from $step $to`; do
 #        nf=$((to - from + 2))
 #        ens=`sed -n ${from},${to}p $FOLDER/${freq}.params`
 #    fi
-
-    FFF=`grep 'Laser Freq' $FOLDER/${freq}.params`
-    FFF=${FFF##* }
     echo "in_file  '$FOLDER/$freq.out'" >> $INFILE.tmp
     echo "probe_freq  $FFF" >> $INFILE.tmp
     echo "num_freqs  $nf" >> $INFILE.tmp
     echo freqs  $FFF $ens >> $INFILE.tmp
 
-    ./bin/F90/post_proc.exe $INFILE.tmp >> $FILE
+    echo "Processing frequency $freq ..."
+    ./bin/F90/post_proc.exe $INFILE.tmp >> $FILE.new
 done
 
 E0=`grep 'Laser Ampli' $FOLDER/${freq}.params`
 E0=${E0##* }
 
-awk -F ' ' '{OFMT="%+.14e"; print $1/1, $2/1, $3/'$E0', $4/'$E0', $5}' $FILE > $FILE.tmp
+awk -F ' ' '{OFMT="%+.14e"; print $1/1, $2/1, $3/'$E0', $4/'$E0', $5}' $FILE.new >> $FILE.tmp
+
+if [[ "$HEAD" == 'yes' ]]; then
+    echo 'frequency (a.u.)      frequency (eV)        chi (real)            chi (imaginary)       estimated relative error (%)' > $FILE
+fi
+
+cat $FILE.tmp >> $FILE
+sort -gk 1 $FILE > $FILE.tmp
 mv $FILE.tmp $FILE
+
+echo
+echo "Finished."
+echo "chi data saved in ${FILE}"
+
+rm -rf $FILE.new
 rm -rf $FILE.tmp
 rm -rf $INFILE.tmp1
 rm -rf $INFILE.tmp
-
-sed -i '1ifrequency (a.u.)      frequency (eV)        chi (real)            chi (imaginary)       estimated relative error (%)' $FILE

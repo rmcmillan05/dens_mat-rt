@@ -1,12 +1,27 @@
 ## Folder where output files stored. This will contain jobs with names given by 
 ## the frequency inputs along with the lr output file chi1.dat
-out_folder  './lr-out/'
+out_folder  './chi-sqd-mnp-res-theta-7200-13nm-broad/'
+chi_out  'sqd'
+read_col  3
+#
 ## Lower bound of frequency range
-freq_min  2.45
+freq_min  2.498
 ## Upper bound of frequency range
-freq_max  2.55
+freq_max  2.502
 ## Step size between frequencies
-step  0.0025
+step  0.001
+
+##------------------------------------------------------------------------------
+## sqd-mnp parameters
+##------------------------------------------------------------------------------
+dist_nm  13.0
+rad_nm  7.5
+s_alpha  2.0
+eps_0  1.0
+eps_s  6.0
+theta  (0.0, 7200.0)
+omega_g  0.091873378521923
+gamma_g  0.002
 
 ##------------------------------------------------------------------------------
 ## propagation calculation parameters
@@ -16,9 +31,9 @@ in_folder  './DATA/data_2level/'
 ## Type of field. Choose from: cosfield/sinfield/zero/step/pulse
 field  cosfield
 ## Max propagation time in atomic units
-trange_au  10000
+trange_au  500000
 ## No. of points per atomic unit (npts+1 used) in RK method
-nptspau  5
+nptspau  2
 ## Laser intensity in W/cm2
 I0  1.0
 
@@ -26,7 +41,7 @@ I0  1.0
 ## post processing parameters
 ##------------------------------------------------------------------------------
 ## Start the processing from this point [default start_from=0.0]
-start_from  4000
+start_from  499000
 ## Process up to this point [no default]
 go_to  10000
 ## If use_max_freq is true, then "go_to" is calculated from the maximum

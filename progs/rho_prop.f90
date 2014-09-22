@@ -22,7 +22,7 @@ PROGRAM rho_prop
     ! Dummy sum variables.
     INTEGER            :: i, j
     
-    CALL SYSTEM_CLOCK(count1,count_rate)
+!    CALL SYSTEM_CLOCK(count1,count_rate)
 
     ! Take first input argument as the file from which variables are read 
     ! (default rho_prop.in).
@@ -117,11 +117,11 @@ PROGRAM rho_prop
 
     ! Printing information about job to screen.
     WRITE(*,'(A1)',ADVANCE='NO') char(10)
-    WRITE(*,'(A28)') '**** Completed. Yay :-) ****'
-    CALL SYSTEM_CLOCK(count2,count_rate)
-    WRITE(*,*)
-    WRITE(*,'(A17,F16.2,A9)') 'Total time taken: ' ,                          &
-                               (REAL(count2-count1)/REAL(count_rate)),        &
-                              ' seconds.'
+!    WRITE(*,'(A28)') '**** Completed. Yay :-) ****'
+!    CALL SYSTEM_CLOCK(count2,count_rate)
+!    WRITE(*,*)
+!    WRITE(*,'(A17,F16.2,A9)') 'Total time taken: ' ,                          &
+!                               (REAL(count2-count1)/REAL(count_rate)),        &
+!                              ' seconds.'
 
 END PROGRAM rho_prop

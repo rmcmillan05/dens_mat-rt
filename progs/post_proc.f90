@@ -124,8 +124,8 @@ PROGRAM post_proc
     WRITE(fid, '(ES22.14)', ADVANCE='NO') cos_coeff(probe_freq_id)
     WRITE(std_out, '(ES22.14)', ADVANCE='NO') sin_coeff(probe_freq_id)
     WRITE(fid, '(ES22.14)', ADVANCE='NO') sin_coeff(probe_freq_id)
-    WRITE(std_out, '(F10.2)') max_err
-    WRITE(fid, '(F10.2)') max_err
+    WRITE(std_out, '(F12.5)') max_err
+    WRITE(fid, '(F12.5)') max_err
     WRITE(fid, *) 
 
     ALLOCATE(headers(2))

@@ -12,16 +12,26 @@ SUBROUTINE runge
     USE params , ONLY : num_lev, field, npts, rk_step, positions, mu, rho_0,  &
                         out_file, npos
     USE fields
+    USE global_params , ONLY : pi, ci
+    USE params , ONLY : theta, omega_g, gamma_g
     IMPLICIT NONE
 
     ! rho(t)
     COMPLEX(KIND=DP), ALLOCATABLE                 :: rho(:,:)
+    COMPLEX(KIND=DP), ALLOCATABLE :: rho_tmp(:,:)
+    COMPLEX(KIND=DP) :: s
+    COMPLEX(KIND=DP) :: s_tmp
     ! RK variables
-    COMPLEX(KIND=DP), ALLOCATABLE, DIMENSION(:,:) :: k1, k2, k3, k4
+    COMPLEX(KIND=DP), ALLOCATABLE, DIMENSION(:,:,:) :: k_rho
+    COMPLEX(KIND=DP) :: k_s(4)
+    REAL(KIND=DP) :: Pe
+    REAL(KIND=DP) :: fac(3)
     ! Dummy index variables
     INTEGER                                       :: i, j, n, m 
     ! Time
     REAL(KIND=DP)                                 :: t
+    REAL(KIND=DP)                                 :: t_tmp
+    REAL(KIND=DP) :: field_t
     ! Commuted matrix
     COMPLEX(KIND=DP), ALLOCATABLE                 :: comm(:,:)
     ! Dipole at each time-step
@@ -48,23 +58,26 @@ SUBROUTINE runge
 
     ALLOCATE(                                                                 &
              rho(num_lev,num_lev),                                            &
+             rho_tmp(num_lev,num_lev),                                        &
              comm(num_lev,num_lev),                                           &
-             k1(num_lev,num_lev),                                             &
-             k2(num_lev,num_lev),                                             &
-             k3(num_lev,num_lev),                                             &
-             k4(num_lev,num_lev)                                              &
+             k_rho(4,num_lev,num_lev)                                             &
              )
     
     ! Initializing
     rho    = rho_0
+    s = 0.0_DP
     t      = 0.0_DP
     dipole = 0.0_DP
+    Pe = 0.0_DP
 
     ! Printing column headers
-    WRITE(out_id, '(A16)', ADVANCE='NO') ' t              '
+    WRITE(out_id, '(A22)', ADVANCE='NO') ' t              '
     fieldchar=' '//TRIM(field)//'(t)'
-    WRITE(out_id, '(A16)', ADVANCE='NO') fieldchar
-    WRITE(out_id, '(A16)', ADVANCE='NO') ' dipole         '
+    WRITE(out_id, '(A22)', ADVANCE='NO') fieldchar
+!    WRITE(out_id, '(A22)', ADVANCE='NO') 'effective field '
+    WRITE(out_id, '(A22)', ADVANCE='NO') ' dipole (2-lev) '
+    WRITE(out_id, '(A22)', ADVANCE='NO') ' dipole (gold)  '
+!    WRITE(out_id, '(A16)', ADVANCE='NO') ' s(t) imag (~0?)'
     DO j = 1, npos 
         WRITE(out_id, '(A5)', ADVANCE='NO') ' rho_'
         WRITE(poschar, '(I2)') positions(j,1)
@@ -78,7 +91,10 @@ SUBROUTINE runge
     ! Printing values at t=0
     WRITE(out_id, charfmat, ADVANCE='NO') t
     WRITE(out_id, charfmat, ADVANCE='NO') efield(field, t)
+    WRITE(out_id, charfmat, ADVANCE='NO') efield(field, t)
     WRITE(out_id, charfmat, ADVANCE='NO') dipole
+    WRITE(out_id, charfmat, ADVANCE='NO') REAL(Pe)
+!    WRITE(out_id, charfmat, ADVANCE='NO') AIMAG(Pe)
     DO j = 1, npos
             WRITE(out_id, charfmat, ADVANCE='NO')                             &
             REAL(rho(positions(j,1),positions(j,2)),KIND=DP)
@@ -90,63 +106,92 @@ SUBROUTINE runge
     ! Percentage complete
     pcomp = REAL(npts)/pfraco
 
+    ! Parameters in RK algorithm
+    fac(1) = 0.5_DP
+    fac(2) = 0.5_DP
+    fac(3) = 1.0_DP
+
     DO i = 0, npts-1
 
-        ! Initialize RK variables
-        k1=0.0_DP
-        k2=0.0_DP
-        k3=0.0_DP
-        k4=0.0_DP
+        CALL rk_de(rho, s, t, k_rho(1,:,:), k_s(1))
+        k_rho(1,:,:) = rk_step*k_rho(1,:,:)
+        k_s(1) = rk_step*k_s(1)
 
-        ! Calculating RK variables
-        comm = commute(mu,rho)
-        DO n = 1,num_lev
-            DO m =1,num_lev
-                IF ( m >= n ) THEN
-                    k1(n,m) = runge_k_nm(n, m, t, rho, comm)
-                ENDIF
-            ENDDO
-        ENDDO
+        CALL rk_de(rho+0.5_DP*k_rho(1,:,:), s+0.5_DP*k_s(1), t+0.5_DP*rk_step, k_rho(2,:,:), k_s(2))
+        k_rho(2,:,:) = rk_step*k_rho(2,:,:)
+        k_s(2) = rk_step*k_s(2)
 
-        comm = commute(mu,rho+0.5_DP*k1)
-        DO n = 1,num_lev
-            DO m =1,num_lev
-                IF ( m >= n ) THEN
-                    k2(n,m) = runge_k_nm(n, m, t+0.5_DP*rk_step,              &
-                                         rho+0.5_DP*k1, comm)
-                ENDIF
-            ENDDO
-        ENDDO
+        CALL rk_de(rho+0.5_DP*k_rho(2,:,:), s+0.5_DP*k_s(2), t+0.5_DP*rk_step, k_rho(3,:,:), k_s(3))
+        k_rho(3,:,:) = rk_step*k_rho(3,:,:)
+        k_s(3) = rk_step*k_s(3)
 
-        comm = commute(mu,rho+0.5_DP*k2)
-        DO n = 1,num_lev
-            DO m =1,num_lev
-                IF ( m >= n ) THEN
-                    k3(n,m) = runge_k_nm(n, m, t+0.5_DP*rk_step,              &
-                                         rho+0.5_DP*k2, comm)
-                ENDIF
-            ENDDO
-        ENDDO
+        CALL rk_de(rho+k_rho(3,:,:), s+k_s(3), t+rk_step, k_rho(4,:,:), k_s(4))
+        k_rho(4,:,:) = rk_step*k_rho(4,:,:)
+        k_s(4) = rk_step*k_s(4)
 
-        comm = commute(mu,rho+k3)
-        DO n = 1,num_lev
-            DO m =1,num_lev
-                IF ( m >= n ) THEN
-                    k4(n,m) = runge_k_nm(n, m, t+rk_step, rho+k3, comm)
-                ENDIF
-            ENDDO
-        ENDDO
-
-        rho = rho + (k1 + (2.0_DP *k2) + (2.0_DP *k3) + k4) / 6.0_DP
-
-        ! Exploiting that p_nm=p_mn*
-        DO n = 1,num_lev
-            DO m =1,num_lev
-                IF ( m > n ) THEN
-                    rho(m,n) = CONJG(rho(n,m))
-                ENDIF
-            ENDDO
-        ENDDO
+        rho = rho + (k_rho(1,:,:) + 2.0_DP*k_rho(2,:,:) + 2.0_DP*k_rho(3,:,:) + k_rho(4,:,:))/6.0_DP
+        s = s + (k_s(1) + 2.0_DP*k_s(2) + 2.0_DP*k_s(3) + k_s(4))/6.0_DP
+        t = t + rk_step
+        
+!        k_s = 0.0_DP
+!
+!        DO j = 1,4
+!
+!            IF ( j == 1 ) THEN
+!                s_tmp = s
+!                t_tmp = t
+!            ELSE
+!                s_tmp = s + fac(j-1)*k_s(j-1)
+!                t_tmp = t + fac(j-1)*rk_step
+!            ENDIF
+!
+!            k_s(j) = -(-ci*gamma_g + omega_g)*s_tmp &
+!                     -(efield(field, t_tmp) + 4.0*pi*dipole)
+!            k_s(j) = rk_step * k_s(j)
+!
+!        ENDDO
+!
+!        s = s + (k_s(1) + 2.0_DP*k_s(2) + 2.0_DP*k_s(3) + k_s(4))/6.0_DP
+!
+!        Pe = theta*s
+!
+!        ! Initialize RK variables
+!        k_rho = 0.0_DP
+!
+!        DO j = 1,4
+!            
+!            IF ( j == 1 ) THEN
+!                rho_tmp = rho
+!                t_tmp = t
+!            ELSE
+!                rho_tmp = rho + fac(j-1)*k_rho(j-1,:,:)
+!                t_tmp = t + fac(j-1)*rk_step
+!            ENDIF
+!
+!            field_t = efield(field, t_tmp) + 4.0_DP*pi*REAL(Pe)
+!            comm = commute(mu, rho_tmp)
+!
+!            DO n = 1,num_lev
+!                DO m = 1,num_lev
+!                    IF ( m >= n ) THEN
+!                        k_rho(j,n,m) = runge_k_nm(n, m, field_t, rho_tmp, comm)
+!                    ENDIF
+!                ENDDO
+!            ENDDO
+!
+!        ENDDO
+!        
+!        rho = rho + (k_rho(1,:,:) + 2.0_DP*k_rho(2,:,:) +                             &
+!                     2.0_DP*k_rho(3,:,:) + k_rho(4,:,:)) / 6.0_DP
+!
+!        ! Exploiting that p_nm=p_mn*
+!        DO n = 1,num_lev
+!            DO m =1,num_lev
+!                IF ( m > n ) THEN
+!                    rho(m,n) = CONJG(rho(n,m))
+!                ENDIF
+!            ENDDO
+!        ENDDO
 
         ! Calculating dipole
         dipole = 0.0_DP
@@ -156,13 +201,19 @@ SUBROUTINE runge
             ENDDO
         ENDDO
 
-        ! Next time-step
-        t   = t + rk_step
+        ! Calculating gold dipole
+        Pe = REAL(theta*s)
+
+!        ! Next time-step
+!        t   = t + rk_step
 
         !! PRINTING VALUES !!
         WRITE(out_id, charfmat, ADVANCE='NO') t  
         WRITE(out_id, charfmat, ADVANCE='NO') efield(field, t)
+!        WRITE(out_id, charfmat, ADVANCE='NO') efield(field, t) + efield(field, t) + 4.0_DP*pi*REAL(Pe)
         WRITE(out_id, charfmat, ADVANCE='NO') dipole
+        WRITE(out_id, charfmat, ADVANCE='NO') Pe
+!        WRITE(out_id, charfmat, ADVANCE='NO') AIMAG(Pe)
         DO j = 1, npos
                 WRITE(out_id, charfmat, ADVANCE='NO')                         &
                 REAL(rho(positions(j,1),positions(j,2)),KIND=DP)
@@ -185,20 +236,53 @@ SUBROUTINE runge
 
 END SUBROUTINE runge
 
-FUNCTION runge_k_nm(n, m, t, rho, comm)
+SUBROUTINE rk_de(rho_in, s_in, t_in, rho_out, s_out)
+    USE double
+    USE params , ONLY : s_alpha, eps_eff1, eps_eff2, dist, theta, omega_g, &
+                            gamma_g
+    USE params , ONLY : en, gma, field, mu, num_lev, rho_eq
+    USE global_params , ONLY : ci
+    USE fields , ONLY : efield
+    IMPLICIT NONE
+
+    COMPLEX(KIND=DP), INTENT(IN) :: rho_in(:,:)
+    COMPLEX(KIND=DP), INTENT(IN) :: s_in
+    REAL(KIND=DP), INTENT(IN) :: t_in
+    COMPLEX(KIND=DP), INTENT(OUT) :: rho_out(num_lev,num_lev)
+    COMPLEX(KIND=DP) :: comm(num_lev,num_lev)
+    COMPLEX(KIND=DP), INTENT(OUT) :: s_out
+
+    INTEGER :: n, m
+
+    comm = commute(mu, rho_in)
+    DO n=1,num_lev
+        DO m=1,num_lev
+           rho_out(n,m) = -ci*(en(n)-en(m))*rho_in(n,m) - gma(n,m)*(rho_in(n,m)&
+                          - rho_eq(n,m)) + ci*(efield(field,t_in)              &
+                          + s_alpha*theta*s_in/(eps_eff1*dist**3))          &
+                            *comm(n,m)
+        ENDDO
+    ENDDO
+
+    s_out = -(gamma_g + ci*omega_g)*s_in + (efield(field,t_in) + s_alpha*trace(MATMUL(mu,rho_in))/(eps_eff2*dist**3))
+
+END SUBROUTINE rk_de
+
+FUNCTION runge_k_nm(n, m, field_t, rho, comm)
         USE double
         USE fields
         USE params , ONLY : en, num_lev, gma, big_gma, field, rk_step, field, &
-                            gma, big_gma, ci, rho_eq
+                            gma, big_gma, rho_eq
+        USE global_params , ONLY : ci
         IMPLICIT NONE
         COMPLEX(KIND=DP), INTENT(IN), DIMENSION(:,:) :: rho, comm
         INTEGER, INTENT(IN) :: n, m
-        REAL(KIND=DP), INTENT(IN) :: t
+        REAL(KIND=DP), INTENT(IN) :: field_t
         COMPLEX(KIND=DP) :: runge_k_nm
         INTEGER :: j
 
         runge_k_nm = -ci * (en(n) - en(m)) * rho(n,m)                         &
-                     +ci * efield(field,t) * comm(n,m)                        &
+                     +ci * field_t * comm(n,m)                        &
                      - gma(n,m) * rho(n,m)                                    &
                      + gma(n,m) * rho_eq(n,m)
 
@@ -215,6 +299,21 @@ FUNCTION runge_k_nm(n, m, t, rho, comm)
         runge_k_nm = rk_step * runge_k_nm
 
 END FUNCTION
+
+FUNCTION trace(A)
+    USE double
+    IMPLICIT NONE
+
+    COMPLEX(KIND=DP), INTENT(IN) :: A(:,:)
+    COMPLEX(KIND=DP) :: trace
+    INTEGER :: i
+
+    trace = 0.0_DP
+    DO i = 1,SIZE(A,1)
+        trace = trace + A(i,i)
+    ENDDO
+
+END FUNCTION trace
 
 FUNCTION commute(A, B)
     USE double

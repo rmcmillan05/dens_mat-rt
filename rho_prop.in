@@ -3,14 +3,27 @@ in_folder  './DATA/data_2level/'
 ## Name of job
 name  'test'
 ## Folder where output files name.out and name.params are stored
-out_folder  './out/'          
+out_folder  './test/blah/'          
 ## Type of field. Choose from: cosfield/sinfield/zero/step/pulse
 field  cosfield
 ## Max propagation time in atomic units
-trange_au  10000
+trange_au  100000
 ## No. of points per atomic unit (npts+1 used) in RK method
-nptspau  5
+nptspau  0.4
 ## Laser frequency. Choose one of the following flags: omega_ev/omega_au/lambda
-omega_ev  2.0           
+omega_ev  2.50
 ## Laser intensity in W/cm2
 I0  1.0
+
+##------------------------------------------------------------------------------
+## sqd-mnp parameters
+##------------------------------------------------------------------------------
+dist_nm  80.0
+rad_nm  7.5
+s_alpha 0.0
+eps_0  1.0
+eps_s  6.0
+# theta = omega_g*m_h
+m_h  26.0
+omega_g  0.09187337852
+gamma_g  0.053778

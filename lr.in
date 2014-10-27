@@ -19,7 +19,7 @@ rad_nm 7.5
 s_alpha 2.0
 eps_0  1.0
 eps_s  6.0
-# theta = gamma_g*gold_peak_height
+# theta = gamma_g*m_h
 m_h  0.9344
 omega_g  0.08976
 gamma_g  0.005490

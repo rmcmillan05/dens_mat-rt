@@ -37,7 +37,7 @@ MODULE params
     REAL(KIND=DP) :: eps_eff1
     REAL(KIND=DP) :: eps_eff2
 
-    COMPLEX(KIND=DP) :: theta
+    REAL(KIND=DP) :: theta
     REAL(KIND=DP) :: omega_g
     REAL(KIND=DP) :: gamma_g
     !
@@ -150,7 +150,7 @@ SUBROUTINE get_params
     s_alpha = 2.0_DP
     eps_0 = 1.0_DP
     eps_s = 6.0_DP
-    theta = (0.0_DP, 7200.0_DP)
+    theta = 0.0_DP
     omega_g = 0.091873378521923_DP
     gamma_g = 0.00008_DP
 
@@ -193,7 +193,7 @@ SUBROUTINE get_params
                 READ(buffer, *, IOSTAT=ios) omega_g
                 CALL param_read_success('omega_g',fh_log)
 
-            CASE ('theta')
+            CASE ('m_h')
                 READ(buffer, *, IOSTAT=ios) theta
                 CALL param_read_success('theta',fh_log)
 
@@ -330,6 +330,7 @@ SUBROUTINE get_params
     rad = rad_nm/length_par
     eps_eff1 = (2.0_DP*eps_0 + eps_s)/(3.0_DP*eps_0)
     eps_eff2 = (2.0_DP*eps_0 + eps_s)/3.0_DP
+    theta = gamma_g*theta
 
     
     ! Defining RK step size and npts from npstpau

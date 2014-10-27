@@ -19,6 +19,7 @@ TO INSTALL:
         -h : --help    Display this help and exit.
         -v : --verbose Show all compiler commands during make.
     make [all]
+    make install
 
 To make an individual program (example \$PROGDIR/rho_prop.f90):
 
@@ -28,6 +29,7 @@ where \$PROGDIR and \$BINDIR are as below.
 
 To modify options, export variables:
 
+    INPATH  = [] (where executables are installed)
     F90     = [gfortran]
     FFLAGS  = [-O3 -fopenmp -Wall -Wextra -Wconversion -pedantic] (for gfortran)
             = [-O3 -fopenmp] (for ifort)
@@ -133,6 +135,7 @@ echo 'MODDIR = '$BINDIR_'/mods' >> $FILE
 echo >> $FILE
 
 echo '# COMPILER AND OPTIONS' >> $FILE
+echo 'INPATH = '$INPATH >> $FILE
 echo 'F90 = '$F90 >> $FILE
 echo 'FFLAGS = '$FFLAGS >> $FILE
 echo 'LFLAG = '$LFLAG >> $FILE
@@ -181,6 +184,11 @@ echo -e "\t@echo 'Compiling \$<'" >> $FILE
 echo -e '\t'$VERB'$(F90) $(FFLAGS) -c $< -o $@ $(LFLAG) $(MODDIR) ' >> $FILE
 echo >> $FILE
 
+echo '# INSTALLATION' >> $FILE
+echo 'install:' >> $FILE
+echo -e "\t@if [[ '\$(INPATH)' != '' ]]; then if [ ! -e \$(INPATH) ]; then mkdir -p \$(INPATH); fi; cp \$(BINDIR)/*.exe \$(INPATH); fi" >> $FILE
+
+echo >> $FILE
 echo '# CLEANING UP' >> $FILE
 echo 'clean:' >> $FILE
 echo -e '\t rm -fr *.mod $(MODDIR) $(BINDIR) $(SRCDIR)/*.o $(PROGDIR)/*.o' >> $FILE

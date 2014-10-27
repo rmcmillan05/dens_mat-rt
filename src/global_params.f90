@@ -18,6 +18,10 @@ MODULE global_params
     REAL(KIND=DP), PARAMETER    :: time_par = 2.418884326505E-2_DP               
     ! A.u. conversion for length given in nm                                   
     REAL(KIND=DP), PARAMETER    :: length_par = 0.052917721092_DP
+    ! A.u. conversion for mass given in kg
+    REAL(KIND=DP), PARAMETER    :: mass_par = 9.10938291E-13_DP
+    ! Multiplu a.u. by watt_par to convert a.u. of power to watts
+    REAL(KIND=DP), PARAMETER :: power_par = 0.18023781169_DP
 
     ! FOR TEXT OUTPUT
     ! Standard error number

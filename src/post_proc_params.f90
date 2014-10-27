@@ -51,7 +51,7 @@ SUBROUTINE get_params_pp
     CHARACTER(LEN=8)   :: line_out
     CHARACTER(LEN=12)  :: now
     CHARACTER(LEN=12)  :: today
-    CHARACTER(LEN=256) :: ignore(18)
+    CHARACTER(LEN=256) :: ignore(19)
 
     ! SET DEFAULTS
     start_from = 0.0_DP
@@ -69,24 +69,25 @@ SUBROUTINE get_params_pp
     ! SETTING PARAMETERS
     
     ! Inputs to ignore in input file
-    ignore  = (/'freq_max    ',                                                    &
-                'freq_min    ',                                                    &
-                'step        ',                                                        &
-                'in_folder   ',                                                   &
-                'field       ',                                                       &
-                'trange_au   ',                                                   &
-                'nptspau     ',                                                     &
-                'I0          ',                                                          &
-                'omega_ev    ',                                                    &
-                'chi_out     ',                                                     &
-                'dist_nm     ',                                                     &
-                'rad_nm      ',                                                      &
-                's_alpha     ',                                                     &
-                'eps_s       ',                                                       &
-                'eps_0       ',                                                       &
-                'theta       ',                                                       &
-                'omega_g     ',                                                     &
-                'gamma_g     '                                                      &
+    ignore  = (/'freq_max           ',                                                    &
+                'freq_min           ',                                                    &
+                'step               ',                                                        &
+                'in_folder          ',                                                   &
+                'field              ',                                                       &
+                'trange_au          ',                                                   &
+                'nptspau            ',                                                     &
+                'I0                 ',                                                          &
+                'omega_ev           ',                                                    &
+                'chi_out            ',                                                     &
+                'dist_nm            ',                                                     &
+                'rad_nm             ',                                                      &
+                's_alpha            ',                                                     &
+                'eps_s              ',                                                       &
+                'eps_0              ',                                                       &
+                'theta              ',                                                       &
+                'omega_g            ',                                                     &
+                'm_h                ',                                              &
+                'gamma_g            '                                                      &
               /)
 
     CALL DATE_AND_TIME(DATE=today, TIME=now)

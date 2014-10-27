@@ -9,6 +9,7 @@ PROGRAM rho_prop
     USE double
     USE num_lines , ONLY : numlines
     USE runge_mod , ONLY : runge
+    USE print_mat_mod
     USE print_params_mod , ONLY : print_params
     USE params , ONLY : num_lev, npos, in_folder, in_file, rho_0, en, gma,    &
                         big_gma, mu, positions, rho_eq, get_params, check_file
@@ -116,7 +117,7 @@ PROGRAM rho_prop
     CALL print_params
 
     ! Printing information about job to screen.
-    WRITE(*,'(A1)',ADVANCE='NO') char(10)
+!    WRITE(*,'(A1)',ADVANCE='NO') char(10)
 !    WRITE(*,'(A28)') '**** Completed. Yay :-) ****'
 !    CALL SYSTEM_CLOCK(count2,count_rate)
 !    WRITE(*,*)

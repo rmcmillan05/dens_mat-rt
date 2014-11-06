@@ -149,7 +149,7 @@ echo 'SRCOBJ = $(wildcard $(SRCDIR)/*f90)' >> $FILE
 echo 'MODOBJ = $(SRCOBJ:.f90=.o)' >> $FILE
 echo >> $FILE
 
-echo 'all: '${PNAME[*]} $LRPROG >> $FILE
+echo 'all: '${PNAME[*]} $LRPROG install >> $FILE
 echo >> $FILE
 
 echo '# MODULE DEPENDENCIES' >> $FILE
@@ -172,7 +172,12 @@ echo '# LINKING lin_resp' >> $FILE
     echo "${LRPROG}: ${LRSRC}" >> $FILE
     echo -e "\t@echo '----------------------'" >> $FILE
     echo -e "\t@echo 'Linking lin_resp'" >> $FILE
-    echo -e "\t@sed \"s/F90/$F90/\" $LRSRC > $LRPROG" >> $FILE
+    if [[ $INPATH != '' ]]; then
+        echo -e "\t@sed \"s=PATHTOBIN=$INPATH=\" $LRSRC > $LRPROG" >> $FILE
+    else
+        echo -e "\t@sed \"s=PATHTOBIN=./$BINDIR=\" $LRSRC > $LRPROG" >> $FILE
+    fi
+        #    echo -e "\t@sed \"s/F90/$F90/\" $LRSRC > $LRPROG" >> $FILE
     echo -e "\t@chmod u+x $LRPROG" >> $FILE
     echo -e "\t@echo '----------------------'" >> $FILE
     echo >> $FILE

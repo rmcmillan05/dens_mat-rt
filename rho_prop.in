@@ -24,6 +24,7 @@ s_alpha 0.0
 eps_0  1.0
 eps_s  6.0
 # theta = omega_g*m_h
+nk  1
 m_h  26.0
 omega_g  0.09187337852
 gamma_g  0.053778

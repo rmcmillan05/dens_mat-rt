@@ -37,9 +37,10 @@ MODULE params
     REAL(KIND=DP) :: eps_eff1
     REAL(KIND=DP) :: eps_eff2
 
-    REAL(KIND=DP) :: theta
-    REAL(KIND=DP) :: omega_g
-    REAL(KIND=DP) :: gamma_g
+    INTEGER :: nk
+    REAL(KIND=DP), ALLOCATABLE :: theta(:)
+    REAL(KIND=DP), ALLOCATABLE :: omega_g(:)
+    REAL(KIND=DP), ALLOCATABLE :: gamma_g(:)
     !
     ! Step field parameters
     !
@@ -115,7 +116,8 @@ CONTAINS
 SUBROUTINE get_params
     USE double
     USE post_proc_params , ONLY : param_read_success
-    USE global_params , ONLY : wave_par, energy_par, intens_par, length_par, pi
+    USE global_params , ONLY : wave_par, energy_par, intens_par, length_par, pi, &
+                               ev_to_au
     IMPLICIT NONE
     
     ! INPUT-RELATED VARIABLES
@@ -150,9 +152,10 @@ SUBROUTINE get_params
     s_alpha = 2.0_DP
     eps_0 = 1.0_DP
     eps_s = 6.0_DP
-    theta = 0.0_DP
-    omega_g = 0.091873378521923_DP
-    gamma_g = 0.00008_DP
+!    nk = 1
+!    theta(1) = 0.0_DP
+!    omega_g(1) = 0.091873378521923_DP
+!    gamma_g(1) = 0.00008_DP
 
 
     ! SETTING PARAMETERS
@@ -184,6 +187,13 @@ SUBROUTINE get_params
             buffer = buffer(pos+1:)
 
             SELECT CASE (label)
+
+            CASE ('nk')
+                READ(buffer, *, IOSTAT=ios) nk
+                CALL param_read_success('nk',fh_log)
+                ALLOCATE(theta(nk))
+                ALLOCATE(gamma_g(nk))
+                ALLOCATE(omega_g(nk))
 
             CASE ('gamma_g')
                 READ(buffer, *, IOSTAT=ios) gamma_g
@@ -314,6 +324,9 @@ SUBROUTINE get_params
         lambda = energy_par/omega_ev
         omega_au = wave_par/lambda
     ENDIF
+
+    omega_g = omega_g*ev_to_au
+    gamma_g = gamma_g*ev_to_au
 
     CLOSE(fh_log)
 

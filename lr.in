@@ -1,13 +1,13 @@
 ## Folder where output files stored. This will contain jobs with names given by 
 ## the frequency inputs along with the lr output file chi1.dat
-out_folder  './low_intens/80.0'
-chi_out  'mnp'
-read_col  4
+out_folder  './test/'
+chi_out  'field'
+read_col  2
 #
 ## Lower bound of frequency range
 freq_min  2.4 
 ## Upper bound of frequency range
-freq_max  2.6
+freq_max  2.4
 ## Step size between frequencies
 step  0.005
 
@@ -20,6 +20,7 @@ s_alpha 2.0
 eps_0  1.0
 eps_s  6.0
 # theta = gamma_g*m_h
+nk  1
 m_h  0.9344
 omega_g  0.08976
 gamma_g  0.005490

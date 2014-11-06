@@ -38,7 +38,6 @@ CONTAINS
 SUBROUTINE get_params_pp
     USE double
     USE print_mat_mod , ONLY : print_str
-    USE global_params , ONLY : length_par
     IMPLICIT NONE
     
     ! INPUT-RELATED VARIABLES
@@ -51,7 +50,7 @@ SUBROUTINE get_params_pp
     CHARACTER(LEN=8)   :: line_out
     CHARACTER(LEN=12)  :: now
     CHARACTER(LEN=12)  :: today
-    CHARACTER(LEN=256) :: ignore(19)
+    CHARACTER(LEN=256) :: ignore(20)
 
     ! SET DEFAULTS
     start_from = 0.0_DP
@@ -87,6 +86,7 @@ SUBROUTINE get_params_pp
                 'theta              ',                                                       &
                 'omega_g            ',                                                     &
                 'm_h                ',                                              &
+                'nk                 ',                                              &
                 'gamma_g            '                                                      &
               /)
 

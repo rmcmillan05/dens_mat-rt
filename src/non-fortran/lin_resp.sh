@@ -32,7 +32,7 @@ CHIOUT=${CHIIN}.chi1
 
 cat $INFILE > $INFILE.tmp1
 #echo "max_order  1" >> $INFILE.tmp1
-echo "calc_diffs  .TRUE." >> $INFILE.tmp1
+echo "calc_diffs  .FALSE." >> $INFILE.tmp1
 
 FILE=$FOLDER/$CHIOUT
 QMNP=$FOLDER/QMNP.dat
@@ -71,7 +71,7 @@ if [[ "$GD" != 'n' ]]; then
 
         echo "Generating frequency $freq ..."
         if [[ "$EXISTS" != 'y' ]]; then
-            ./bin/F90/rho_prop.exe $INFILE.tmp >> $QMNP
+            PATHTOBIN/rho_prop.exe $INFILE.tmp >> $QMNP
         fi
 
     done
@@ -133,7 +133,7 @@ for freq in $FREQS; do
     echo freqs  $FFF $ens >> $INFILE.tmp
 
     echo "Processing frequency $freq ..."
-    ./bin/F90/post_proc.exe $INFILE.tmp > /dev/null
+    PATHTOBIN/post_proc.exe $INFILE.tmp > /dev/null
 done
 
 
@@ -145,11 +145,11 @@ eps_0=2.666666666666666666667
 grep ! ${FOLDER}/*${CHIIN}-pp.freqs > $FILE.new
 awk -F ' ' '{OFMT="%+.14e"; print $2/1, $3/1, $4/'$E0'/'$eps_0', $5/'$E0'/'$eps_0', $6}' $FILE.new > $FILE.tmp
 
-MAX=`cat ./max_sqd`
-MAX=${MAX##* }
-MAX=${MAX##* }
-MAX=${MAX##* }
-MAX=${MAX%%????????}
+#MAX=`cat ./max_sqd`
+#MAX=${MAX##* }
+#MAX=${MAX##* }
+#MAX=${MAX##* }
+#MAX=${MAX%%????????}
 
 #if [ ! -e $FOLDER/sqd.chi1 ];then
 #    MAX=1.0

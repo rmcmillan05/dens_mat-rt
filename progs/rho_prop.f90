@@ -19,7 +19,7 @@ PROGRAM rho_prop
     CHARACTER(LEN=256) :: rho_in, en_in, gma_in, big_gma_in, mu_in, pos_in,   &
                           rho_eq_in
     ! Used to calculate the total computation time.
-    INTEGER            :: count1, count2, count_rate
+!    INTEGER            :: count1, count2, count_rate
     ! Dummy sum variables.
     INTEGER            :: i, j
     

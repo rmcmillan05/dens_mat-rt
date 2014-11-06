@@ -16,10 +16,12 @@ SUBROUTINE print_params
                         pulse_start, pulse_cycles, pulse_phase
     USE print_mat_mod
     USE params , ONLY : dist, s_alpha, theta, eps_eff1, omega_g, gamma_g, rad, &
-                        mu, eps_eff2
-    USE global_params , ONLY : ci
+                        eps_eff2, nk
+!    USE global_params , ONLY : ci
     IMPLICIT NONE
-    COMPLEX(KIND=DP) :: G
+!    COMPLEX(KIND=DP) :: G
+    INTEGER :: i
+    CHARACTER(LEN=3) :: istr
     
     ! Current working directory
     CHARACTER(LEN=256) :: cwd
@@ -58,19 +60,23 @@ SUBROUTINE print_params
         ENDIF
 
         WRITE(fid,*)
-        CALL print_str_num_real('Gold plasmon resonance (a.u.)', omega_g, fid)
-        CALL print_str_num_real('Gold gamma (a.u.)', gamma_g, fid)
+        DO i = 1,nk
+            WRITE(istr,'(I3)') i
+            CALL print_str_num_real('theta_g_'//ADJUSTL(istr)//' (a.u.)', theta(i), fid)
+            CALL print_str_num_real('omega_g_'//ADJUSTL(istr)//' (a.u.)', omega_g(i), fid)
+            CALL print_str_num_real('gamma_g_'//ADJUSTL(istr)//' (a.u.)', gamma_g(i), fid)
+        ENDDO
         CALL print_str_num_real('Separation (a.u.)', dist, fid)
         CALL print_str_num_real('MNP Diameter (a.u.)', rad, fid)
         CALL print_str_num_real('s_alpha (a.u.)', s_alpha, fid)
-        CALL print_str_num_real('theta (a.u.)', theta, fid)
         CALL print_str_num_real('eps_eff1 (a.u.)', eps_eff1, fid)
-        G = theta*(omega_au-omega_g+ci*gamma_g)/((omega_au-omega_g)**2+gamma_g**2)
-        G = s_alpha**2*G*rad**3*mu(1,2)**2/(eps_eff1*eps_eff2*dist**6)
-        CALL print_str_num_complex('G', G, fid)
-        CALL print_str_num_real('strength of eff. field', s_alpha*theta &
-                                                         /(eps_eff1*dist**3),  &
-                                                        fid)
+        CALL print_str_num_real('eps_eff2 (a.u.)', eps_eff2, fid)
+!        G = theta*(omega_au-omega_g+ci*gamma_g)/((omega_au-omega_g)**2+gamma_g**2)
+!        G = s_alpha**2*G*rad**3*mu(1,2)**2/(eps_eff1*eps_eff2*dist**6)
+!        CALL print_str_num_complex('G', G, fid)
+!        CALL print_str_num_real('strength of eff. field', s_alpha*theta &
+!                                                         /(eps_eff1*dist**3),  &
+!                                                        fid)
 
         WRITE(fid, *)
         CALL print_break(fid)

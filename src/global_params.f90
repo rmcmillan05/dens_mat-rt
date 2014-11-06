@@ -12,6 +12,8 @@ MODULE global_params
     REAL(KIND=DP), PARAMETER    :: wave_par = 45.5633526_DP                            
     ! A.u. of intensity                                                        
     REAL(KIND=DP), PARAMETER    :: intens_par = 3.50944758E16_DP                  
+    ! Multiply by this to convert energy in eV to a.u.
+    REAL(KIND=DP), PARAMETER    :: ev_to_au = 0.036749309_DP
     ! Convert laser energy in eV to wavelength in nm                           
     REAL(KIND=DP), PARAMETER    :: energy_par = 1.239841E3_DP                     
     ! A.u. conversion for time (fs)                                           

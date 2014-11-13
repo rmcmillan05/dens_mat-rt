@@ -35,7 +35,7 @@ cat $INFILE > $INFILE.tmp1
 echo "calc_diffs  .FALSE." >> $INFILE.tmp1
 
 FILE=$FOLDER/$CHIOUT
-QMNP=$FOLDER/QMNP.dat
+Q_fin=$FOLDER/Q.dat
 
 if [ -e $FOLDER ]; then
     echo -n 'Do you want to generate new data? (Y/n) '
@@ -52,12 +52,22 @@ FREQS=`seq $from $step $to`
 
 if [[ "$GD" != 'n' ]]; then
 
-    rm -f $QMNP
+    Q=$Q_fin
+
     if [ ! -e $FOLDER ]; then
         mkdir -p $FOLDER
     fi
-    touch $QMNP
+    touch $Q
 
+    Q_tmp=$Q
+    i=0
+    while [[ -e $Q_tmp ]]; do
+        i=$((i + 1))
+        Q_tmp=${Q}_$i
+    done
+    Q=$Q_tmp
+
+#    rm -f $Q
     echo 'Generating data...'
     echo
     for freq in $FREQS; do
@@ -71,17 +81,34 @@ if [[ "$GD" != 'n' ]]; then
 
         echo "Generating frequency $freq ..."
         if [[ "$EXISTS" != 'y' ]]; then
-            PATHTOBIN/rho_prop.exe $INFILE.tmp >> $QMNP
+            PATHTOBIN/rho_prop.exe $INFILE.tmp >> $Q
         fi
 
     done
 
-    echo "*** Q_mnp written to file $QMNP. ***"
+    if [ ! -e $Q_fin ]; then
+        touch $Q_fin
+        touch $Q_fin.tmp
+    fi
+
 fi
+
+rm -f $Q_fin
+touch $Q_fin
+echo 'frequency (eV)        Q_MNP (W)             Q_SQD (W)             Q = Q_SQD+Q_MNP (W)   ' > $Q_fin
+touch $Q_fin.tmp
+for foo in `ls ${FOLDER}/Q.dat_*`; do
+    cat $foo >> $Q_fin.tmp
+done
+sort -gk 1 $Q_fin.tmp >> $Q_fin
+
+rm -f $Q_fin.tmp
+echo
+echo "*** Q_mnp written to file $Q_fin ***"
 
 ##############################
 ##############################
-#exit
+exit
 ##############################
 ##############################
 
@@ -140,10 +167,11 @@ done
 E0=`grep 'Laser Ampli' $FOLDER/${freq}.params`
 E0=${E0##* }
 
-eps_0=2.666666666666666666667
+eps_eff1=`grep 'eps_eff1' $FOLDER/${freq}.params`
+eps_eff1=${eps_eff1##* }
 
 grep ! ${FOLDER}/*${CHIIN}-pp.freqs > $FILE.new
-awk -F ' ' '{OFMT="%+.14e"; print $2/1, $3/1, $4/'$E0'/'$eps_0', $5/'$E0'/'$eps_0', $6}' $FILE.new > $FILE.tmp
+awk -F ' ' '{OFMT="%+.14e"; print $2/1, $3/1, $4/'$E0'/'$eps_eff1', $5/'$E0'/'$eps_eff1', $6}' $FILE.new > $FILE.tmp
 
 #MAX=`cat ./max_sqd`
 #MAX=${MAX##* }

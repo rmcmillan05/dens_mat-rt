@@ -24,6 +24,8 @@ MODULE global_params
     REAL(KIND=DP), PARAMETER    :: mass_par = 9.10938291E-13_DP
     ! Multiplu a.u. by watt_par to convert a.u. of power to watts
     REAL(KIND=DP), PARAMETER :: power_par = 0.18023781169_DP
+    ! Multiply length in nm by this to get length in a.u.
+    REAL(KIND=DP), PARAMETER :: nm_par = 18.897261245650668_DP
 
     ! FOR TEXT OUTPUT
     ! Standard error number

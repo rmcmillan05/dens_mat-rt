@@ -11,9 +11,11 @@ SUBROUTINE runge
     USE double
     USE params , ONLY : num_lev, field, npts, rk_step, positions, mu, rho_0,  &
                         out_file, npos, trange_au, omega_ev,&
-                        rad, theta, s_alpha, eps_eff2, nk, omega_g, gamma_g
+                        rad, theta, s_alpha, eps_eff2, nk, omega_g, gamma_g, &
+                        dist, eps_eff1, en, gma, rho_eq, E0, omega_au, p22_start, &
+                        check_pt
     USE fields
-    USE global_params , ONLY : pi, std_out
+    USE global_params , ONLY : pi, std_out, nm_par, power_par, ci
     USE print_mat_mod
     IMPLICIT NONE
 
@@ -33,13 +35,15 @@ SUBROUTINE runge
     ! Commuted matrix
     COMPLEX(KIND=DP), ALLOCATABLE                 :: comm(:,:)
     ! Dipole at each time-step
-    REAL(KIND=DP)                                 :: dipole
+    REAL(KIND=DP)                                 :: P_sqd
     REAL(KIND=DP)  :: Q_mnp
-    REAL(KIND=DP)  :: Q_mnp2
-    REAL(KIND=DP)  :: dpdt
-    REAL(KIND=DP)  :: dpdt2
-    REAL(KIND=DP)  :: P_mnp_old
+    REAL(KIND=DP)  :: Q_sqd
+    REAL(KIND=DP)  :: Q
+    REAL(KIND=DP)  :: dpdt_mnp
+!    REAL(KIND=DP)  :: dpdt_sqd
+    REAL(KIND=DP)  :: P_sqd_old
     REAL(KIND=DP)  :: E_mnp
+    REAL(KIND=DP)  :: E_sqd
     !
     ! Title format specifier
     CHARACTER(LEN=64)                             :: charfmat = '(ES22.14)'
@@ -71,15 +75,17 @@ SUBROUTINE runge
     rho    = rho_0
     s = 0.0_DP
     t      = 0.0_DP
-    dipole = 0.0_DP
+    P_sqd = 0.0_DP
     P_mnp = 0.0_DP
 
     ! Printing column headers
-    WRITE(out_id, '(A22)', ADVANCE='NO') ' t              '
+    WRITE(out_id, '(A22)', ADVANCE='NO') ' t                    '
     fieldchar=' '//TRIM(field)//'(t)'
     WRITE(out_id, '(A22)', ADVANCE='NO') fieldchar
-    WRITE(out_id, '(A22)', ADVANCE='NO') ' P_SQD          '
-    WRITE(out_id, '(A22)', ADVANCE='NO') ' P_MNP          '
+    WRITE(out_id, '(A22)', ADVANCE='NO') ' E_SQD                '
+    WRITE(out_id, '(A22)', ADVANCE='NO') ' E_MNP                '
+    WRITE(out_id, '(A22)', ADVANCE='NO') ' P_SQD                '
+    WRITE(out_id, '(A22)', ADVANCE='NO') ' P_MNP                '
     DO j = 1, npos 
         WRITE(out_id, '(A5)', ADVANCE='NO') ' rho_'
         WRITE(poschar, '(I2)') positions(j,1)
@@ -93,7 +99,7 @@ SUBROUTINE runge
     ! Printing values at t=0
     WRITE(out_id, charfmat, ADVANCE='NO') t
     WRITE(out_id, charfmat, ADVANCE='NO') efield(field, t)
-    WRITE(out_id, charfmat, ADVANCE='NO') dipole
+    WRITE(out_id, charfmat, ADVANCE='NO') P_sqd
     WRITE(out_id, charfmat, ADVANCE='NO') P_mnp
     DO j = 1, npos
             WRITE(out_id, charfmat, ADVANCE='NO')                             &
@@ -113,7 +119,7 @@ SUBROUTINE runge
     fac(3) = 1.0_DP
 
     Q_mnp = 0.0_DP
-    Q_mnp2 = 0.0_DP
+    Q_sqd = 0.0_DP
 
     DO i = 1, npts
 
@@ -137,37 +143,45 @@ SUBROUTINE runge
         s = s + (k_s(1,:) + 2.0_DP*k_s(2,:) + 2.0_DP*k_s(3,:) + k_s(4,:))/6.0_DP
         t = t + rk_step
 
-        dipole = REAL(trace(MATMUL(rho,mu)))
+        P_sqd_old = P_sqd
 
-        P_mnp_old = P_mnp
+        P_sqd = REAL(trace(MATMUL(rho,mu)))
+
         ! Calculating gold dipole
         P_mnp = 0.0_DP
-        dpdt2 = 0.0_DP
+        dpdt_mnp = 0.0_DP
         DO j=1,nk
             P_mnp = P_mnp + rad**3*theta(j)*2.0_DP*REAL(s(j))
-!            P_mnp = P_mnp + theta(j)*2.0_DP*REAL(s(j))
-            dpdt2 = dpdt2 + rad**3*2.0_DP*theta(j)*( omega_g(j)*AIMAG(s(j)) - &
+            dpdt_mnp = dpdt_mnp + rad**3*2.0_DP*theta(j)*( omega_g(j)*AIMAG(s(j)) - &
                                               gamma_g(j)*REAL(s(j)) )
         ENDDO
 
-        dpdt = (P_mnp - P_mnp_old)/rk_step
-        E_mnp = efield(field,t) + s_alpha*dipole/eps_eff2/rad**3
+        E_mnp = efield(field,t) + s_alpha*P_sqd/eps_eff2/dist**3
+        E_sqd = efield(field,t) + s_alpha*P_mnp/eps_eff1/dist**3
 
-        Q_mnp = Q_mnp + dpdt*E_mnp
-        Q_mnp2 = Q_mnp2 + dpdt2*E_mnp
+        Q_mnp = Q_mnp + dpdt_mnp*E_mnp
 
-        !! PRINTING VALUES !!
-        WRITE(out_id, charfmat, ADVANCE='NO') t  
-        WRITE(out_id, charfmat, ADVANCE='NO') efield(field, t)
-        WRITE(out_id, charfmat, ADVANCE='NO') dipole
-        WRITE(out_id, charfmat, ADVANCE='NO') P_mnp
-        DO j = 1, npos
-                WRITE(out_id, charfmat, ADVANCE='NO')                         &
-                REAL(rho(positions(j,1),positions(j,2)),KIND=DP)
-                WRITE(out_id, charfmat, ADVANCE='NO')                         &
-                AIMAG(rho(positions(j,1),positions(j,2)))
-        ENDDO                                 
-        WRITE(out_id,*)
+        IF ( t >= p22_start ) THEN
+            ! integrating rho(2,2)
+            Q_sqd = Q_sqd + rho(2,2)
+        ENDIF
+
+        IF ( MOD(i, check_pt) == 0 ) THEN
+            !! PRINTING VALUES !!
+            WRITE(out_id, charfmat, ADVANCE='NO') t  
+            WRITE(out_id, charfmat, ADVANCE='NO') efield(field, t)
+            WRITE(out_id, charfmat, ADVANCE='NO') E_sqd
+            WRITE(out_id, charfmat, ADVANCE='NO') E_mnp
+            WRITE(out_id, charfmat, ADVANCE='NO') P_sqd
+            WRITE(out_id, charfmat, ADVANCE='NO') P_mnp
+            DO j = 1, npos
+                    WRITE(out_id, charfmat, ADVANCE='NO')                         &
+                    REAL(rho(positions(j,1),positions(j,2)),KIND=DP)
+                    WRITE(out_id, charfmat, ADVANCE='NO')                         &
+                    AIMAG(rho(positions(j,1),positions(j,2)))
+            ENDDO                                 
+            WRITE(out_id,*)
+        ENDIF
        
         ! Percentage complete
 !        pcomp = 100.0*REAL(i)/REAL(npts-1)
@@ -179,15 +193,16 @@ SUBROUTINE runge
 
     ENDDO
 
-    Q_mnp = 4.0_DP/3.0_DP*pi*rad**3*Q_mnp*rk_step/trange_au
-    Q_mnp = Q_mnp*0.5_DP/pi
+    Q_mnp = power_par*Q_mnp*rk_step/trange_au
 
-    Q_mnp2 = 4.0_DP/3.0_DP*pi*rad**3*Q_mnp2*rk_step/trange_au
-    Q_mnp2 = Q_mnp2*0.5_DP/pi
+    Q_sqd = power_par*omega_au*gma(1,1)*Q_sqd*rk_step/(trange_au-p22_start)
+
+    Q = Q_mnp + Q_sqd
 
     WRITE(std_out,charfmat, ADVANCE='NO') omega_ev
     WRITE(std_out,charfmat, ADVANCE='NO') Q_mnp
-    WRITE(std_out,charfmat) Q_mnp2
+    WRITE(std_out,charfmat, ADVANCE='NO') Q_sqd
+    WRITE(std_out,charfmat) Q
 
     CLOSE(out_id)
 
@@ -216,7 +231,7 @@ SUBROUTINE rk_de(rho_in, s_in, t_in, rho_out, s_out)
     P_mnp = 0.0_DP
     DO n=1,nk
         P_mnp = P_mnp + rad**3*theta(n)*2.0_DP*REAL(s_in(n))
-!        P_mnp = P_mnp + theta(n)*2.0_DP*REAL(s_in(n))
+!        P_mnp = P_mnp + (theta(n)*2.0_DP*REAL(s_in(n)))
     ENDDO
     E_sqd = efield(field,t_in) + s_alpha*P_mnp/(eps_eff1*dist**3)
     E_mnp = efield(field,t_in) + s_alpha*P_sqd/(eps_eff2*dist**3)

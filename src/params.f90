@@ -66,12 +66,18 @@ MODULE params
     !
     ! Max propagation time in a.u.
     REAL(KIND=DP)      :: trange_au
+    ! Point in time in which taking the average of p22 commences
+    REAL(KIND=DP)      :: p22_start
     ! No of pts (nptspau+1) used in RK method per atomic unit
     REAL(KIND=DP)               :: nptspau
     ! RK step-size
     REAL(KIND=DP)      :: rk_step
     ! Total number of points used in propagation
     INTEGER            :: npts 
+    ! Print a total of out_pts points from RK
+    REAL(KIND=DP)      :: out_pts
+    ! Print every check_pt points in RK
+    INTEGER            :: check_pt
     !
     ! Directories
     !
@@ -131,12 +137,14 @@ SUBROUTINE get_params
     CHARACTER(LEN=12)  :: now
     CHARACTER(LEN=12)  :: today
     LOGICAL            :: ev=.FALSE., nm=.FALSE., au=.FALSE.
+    LOGICAL            :: use_nptspau = .FALSE.
 
     ! SET DEFAULTS
     I0           = 1.0_DP
     field        = 'cosfield'
     trange_au    = 1200.0_DP
     nptspau      = 100.0
+    out_pts      = 1
     in_folder    = '-#error'
     jname        = 'job'
     out_folder   = '.'
@@ -146,6 +154,7 @@ SUBROUTINE get_params
     pulse_phase  = 0.0_DP
     pulse_start  = 0.0_DP
     pulse_cycles = 6.0_DP
+    p22_start    = 0.0_DP
 
     dist_nm = 20.0_DP
     rad_nm = 7.5_DP
@@ -255,9 +264,23 @@ SUBROUTINE get_params
                 READ(buffer, *, IOSTAT=ios) trange_au
                 WRITE(fh_log,*) 'Read "trange_au" successfully.'
 
+            CASE ('p22_start')
+                READ(buffer, *, IOSTAT=ios) p22_start
+                WRITE(fh_log,*) 'Read "p22_start" successfully.'
+
             CASE ('nptspau')
                 READ(buffer, *, IOSTAT=ios) nptspau
                 WRITE(fh_log,*) 'Read "nptspau" successfully.'
+                use_nptspau = .TRUE.
+
+            CASE ('rk_step')
+                READ(buffer, *, IOSTAT=ios) rk_step
+                WRITE(fh_log,*) 'Read "rk_step" successfully.'
+                use_nptspau = .FALSE.
+
+            CASE ('out_pts')
+                READ(buffer, *, IOSTAT=ios) out_pts
+                WRITE(fh_log,*) 'Read "out_pts" successfully.'
 
             CASE ('in_folder')
                 READ(buffer, *, IOSTAT=ios) in_folder
@@ -347,8 +370,14 @@ SUBROUTINE get_params
 
     
     ! Defining RK step size and npts from npstpau
-    rk_step     = 1.0_DP/REAL(nptspau,KIND=DP)
+    IF (use_nptspau) THEN
+        rk_step     = 1.0_DP/REAL(nptspau,KIND=DP)
+    ELSE
+        nptspau     = 1.0_DP/rk_step
+    ENDIF
+
     npts        = NINT(nptspau * trange_au)
+    check_pt    = NINT(REAL(npts)/out_pts)
 
     ! Getting file names
     params_file = TRIM(out_folder)//'/'//TRIM(jname)//'.params'

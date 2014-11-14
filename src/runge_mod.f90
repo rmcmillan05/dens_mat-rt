@@ -83,7 +83,9 @@ SUBROUTINE runge
     fieldchar=' '//TRIM(field)//'(t)'
     WRITE(out_id, '(A22)', ADVANCE='NO') fieldchar
     WRITE(out_id, '(A22)', ADVANCE='NO') ' E_SQD                '
+    WRITE(out_id, '(A22)', ADVANCE='NO') ' E_SQD^2              '
     WRITE(out_id, '(A22)', ADVANCE='NO') ' E_MNP                '
+    WRITE(out_id, '(A22)', ADVANCE='NO') ' E_MNP^2              '
     WRITE(out_id, '(A22)', ADVANCE='NO') ' P_SQD                '
     WRITE(out_id, '(A22)', ADVANCE='NO') ' P_MNP                '
     DO j = 1, npos 
@@ -92,13 +94,17 @@ SUBROUTINE runge
         WRITE(out_id, '(A3)', ADVANCE='NO') poschar//','
         WRITE(poschar, '(I2)') positions(j,2)
         WRITE(out_id, '(A2)', ADVANCE='NO') poschar
-        WRITE(out_id, '(A22)', ADVANCE='NO') ''
+        WRITE(out_id, '(A30)', ADVANCE='NO') '                      '
     ENDDO
     WRITE(out_id,*)
 
     ! Printing values at t=0
     WRITE(out_id, charfmat, ADVANCE='NO') t
     WRITE(out_id, charfmat, ADVANCE='NO') efield(field, t)
+    WRITE(out_id, charfmat, ADVANCE='NO') efield(field, t)
+    WRITE(out_id, charfmat, ADVANCE='NO') efield(field, t)**2
+    WRITE(out_id, charfmat, ADVANCE='NO') efield(field, t)
+    WRITE(out_id, charfmat, ADVANCE='NO') efield(field, t)**2
     WRITE(out_id, charfmat, ADVANCE='NO') P_sqd
     WRITE(out_id, charfmat, ADVANCE='NO') P_mnp
     DO j = 1, npos
@@ -171,7 +177,9 @@ SUBROUTINE runge
             WRITE(out_id, charfmat, ADVANCE='NO') t  
             WRITE(out_id, charfmat, ADVANCE='NO') efield(field, t)
             WRITE(out_id, charfmat, ADVANCE='NO') E_sqd
+            WRITE(out_id, charfmat, ADVANCE='NO') E_sqd**2
             WRITE(out_id, charfmat, ADVANCE='NO') E_mnp
+            WRITE(out_id, charfmat, ADVANCE='NO') E_mnp**2
             WRITE(out_id, charfmat, ADVANCE='NO') P_sqd
             WRITE(out_id, charfmat, ADVANCE='NO') P_mnp
             DO j = 1, npos

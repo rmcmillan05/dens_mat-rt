@@ -67,16 +67,17 @@ SUBROUTINE get_freq_amp(field_in,                                             &
     CALL linspace(start_from, go_to, nf, t_tmp, dt)
 
     IF ( dt < dt_in ) THEN
-        WRITE(gt_char_o, '(F16.12)') go_to
-        CALL print_str('Warning: dt is too large for optimal frequency &
-                       &resolution. Increasing "go_to"...')
+        WRITE(gt_char_o, '(ES16.8)') go_to
+!        CALL print_str('Warning: dt is too large for optimal frequency &
+!                       &resolution. Increasing "go_to"...')
         DO WHILE ( dt < dt_in ) 
             go_to = go_to + min_period
             CALL linspace(start_from, go_to, nf, t_tmp, dt)
         ENDDO
-        WRITE(gt_char_n, '(F16.12)') go_to
-        CALL print_str('"go_to" changed from '//gt_char_o//&
-                       &' to '//TRIM(ADJUSTL(gt_char_n)), std_err)
+        WRITE(gt_char_n, '(ES16.8)') go_to
+!        CALL print_str('"go_to" changed from '//gt_char_o//&
+!                       &' to '//TRIM(ADJUSTL(gt_char_n)), std_err)
+!        CALL print_str('',std_err)
     ENDIF
 
     IF ( go_to > t_in(SIZE(t_in)) ) THEN

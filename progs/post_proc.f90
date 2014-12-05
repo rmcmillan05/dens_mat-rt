@@ -120,6 +120,11 @@ PROGRAM post_proc
                                               energy_par/wave_par
     WRITE(fid, '(ES22.14)', ADVANCE='NO') pos_freqs(probe_freq_id)*            &
                                           energy_par/wave_par
+    ! WRITING LASER FREQ - THIS NEEDS TO BE REMOVED
+    WRITE(std_out, '(ES22.14)', ADVANCE='NO') pos_freqs(2)*        &
+                                              energy_par/wave_par
+    WRITE(fid, '(ES22.14)', ADVANCE='NO') pos_freqs(2)*            &
+                                          energy_par/wave_par
     WRITE(std_out, '(ES22.14)', ADVANCE='NO') cos_coeff(probe_freq_id)
     WRITE(fid, '(ES22.14)', ADVANCE='NO') cos_coeff(probe_freq_id)
     WRITE(std_out, '(ES22.14)', ADVANCE='NO') sin_coeff(probe_freq_id)

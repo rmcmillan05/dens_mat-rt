@@ -50,7 +50,7 @@ SUBROUTINE get_params_pp
     CHARACTER(LEN=8)   :: line_out
     CHARACTER(LEN=12)  :: now
     CHARACTER(LEN=12)  :: today
-    CHARACTER(LEN=256) :: ignore(20)
+    CHARACTER(LEN=256) :: ignore(24)
 
     ! SET DEFAULTS
     start_from = 0.0_DP
@@ -87,6 +87,10 @@ SUBROUTINE get_params_pp
                 'omega_g            ',                                                     &
                 'm_h                ',                                              &
                 'nk                 ',                                              &
+                'p22_start          ',                                              &
+                'rk_step            ',                                              &
+                'out_pts            ',                                              &
+                'freq_mult          ',                                              &
                 'gamma_g            '                                                      &
               /)
 

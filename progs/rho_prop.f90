@@ -9,20 +9,21 @@ PROGRAM rho_prop
     USE double
     USE num_lines , ONLY : numlines
     USE runge_mod , ONLY : runge
+    USE print_mat_mod
     USE print_params_mod , ONLY : print_params
     USE params , ONLY : num_lev, npos, in_folder, in_file, rho_0, en, gma,    &
-                        big_gma, mu, positions, rho_eq, get_params
+                        big_gma, mu, positions, rho_eq, get_params, check_file
     IMPLICIT NONE
 
     ! Names of input matrices.
     CHARACTER(LEN=256) :: rho_in, en_in, gma_in, big_gma_in, mu_in, pos_in,   &
                           rho_eq_in
     ! Used to calculate the total computation time.
-    INTEGER            :: count1, count2, count_rate
+!    INTEGER            :: count1, count2, count_rate
     ! Dummy sum variables.
     INTEGER            :: i, j
     
-    CALL SYSTEM_CLOCK(count1,count_rate)
+!    CALL SYSTEM_CLOCK(count1,count_rate)
 
     ! Take first input argument as the file from which variables are read 
     ! (default rho_prop.in).
@@ -38,12 +39,19 @@ PROGRAM rho_prop
 
     ! Reading in matrices
     rho_in      = TRIM(in_folder)//'/rho.txt'
+    CALL check_file(rho_in)
     en_in       = TRIM(in_folder)//'/en.txt'
+    CALL check_file(en_in)
     gma_in      = TRIM(in_folder)//'/gma.txt'
+    CALL check_file(gma_in)
     big_gma_in  = TRIM(in_folder)//'/big_gma.txt'
+    CALL check_file(big_gma_in)
     mu_in       = TRIM(in_folder)//'/mu.txt'
+    CALL check_file(mu_in)
     pos_in      = TRIM(in_folder)//'/positions.txt'
+    CALL check_file(pos_in)
     rho_eq_in   = TRIM(in_folder)//'/rho_eq.txt'
+    CALL check_file(rho_eq_in)
 
     ! Reading number of levels in system by the number of lines in the rho_in
     ! matrix. The number of rho elements to be read is npos.
@@ -109,12 +117,12 @@ PROGRAM rho_prop
     CALL print_params
 
     ! Printing information about job to screen.
-    WRITE(*,'(A1)',ADVANCE='NO') char(10)
-    WRITE(*,'(A28)') '**** Completed. Yay :-) ****'
-    CALL SYSTEM_CLOCK(count2,count_rate)
-    WRITE(*,*)
-    WRITE(*,'(A17,F16.2,A9)') 'Total time taken: ' ,                          &
-                               (REAL(count2-count1)/REAL(count_rate)),        &
-                              ' seconds.'
+!    WRITE(*,'(A1)',ADVANCE='NO') char(10)
+!    WRITE(*,'(A28)') '**** Completed. Yay :-) ****'
+!    CALL SYSTEM_CLOCK(count2,count_rate)
+!    WRITE(*,*)
+!    WRITE(*,'(A17,F16.2,A9)') 'Total time taken: ' ,                          &
+!                               (REAL(count2-count1)/REAL(count_rate)),        &
+!                              ' seconds.'
 
 END PROGRAM rho_prop

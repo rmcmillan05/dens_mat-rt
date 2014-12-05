@@ -2,23 +2,6 @@ MODULE params
     USE double
     IMPLICIT NONE
     
-    ! UNIVERSAL PARAMETERS
-    !
-    ! Imaginary number
-    COMPLEX(KIND=DP), PARAMETER :: ci = (0.0_DP, 1.0_DP)
-    ! pi
-    REAL(KIND=DP), PARAMETER    :: pi = 3.1415926535897932
-    ! A.u. of wavelength when given in nm
-    REAL(KIND=DP), PARAMETER    :: wave_par = 45.5633526_DP                            
-    ! A.u. of intensity                                                        
-    REAL(KIND=DP), PARAMETER    :: intens_par = 3.50944758E16_DP                  
-    ! Convert laser energy in eV to wavelength in nm                           
-    REAL(KIND=DP), PARAMETER    :: energy_par = 1.239841E3_DP                     
-    ! A.u. conversion for time (fs)                                           
-    REAL(KIND=DP), PARAMETER    :: time_par = 2.418884326505E-2_DP               
-    ! A.u. conversion for length given in nm                                   
-    REAL(KIND=DP), PARAMETER    :: length_par = 0.052917721092_DP
-
     ! USER INPUT VARIABLES FROM FILE WHICH GET SET WHEN get_params IS CALLED
     !
     ! Field parameters
@@ -35,6 +18,29 @@ MODULE params
     REAL(KIND=DP)      :: I0
     ! Laser amplitude in a.u.
     REAL(KIND=DP)      :: E0
+    !
+    ! SQD_MNP
+    !
+    ! Distance of centres between MNP and SQD in nm
+    REAL(KIND=DP) :: dist_nm
+    ! Radius of MNP in nm
+    REAL(KIND=DP) :: rad_nm
+    ! s_alpha = 2 for z-axis, -1 for x,y (z is axis of molecule)
+    REAL(KIND=DP) :: s_alpha
+    ! Dielectric constant of background medium
+    REAL(KIND=DP) :: eps_0
+    ! Dielectric constant of SQD
+    REAL(KIND=DP) :: eps_s
+
+    REAL(KIND=DP) :: dist
+    REAL(KIND=DP) :: rad
+    REAL(KIND=DP) :: eps_eff1
+    REAL(KIND=DP) :: eps_eff2
+
+    INTEGER :: nk
+    REAL(KIND=DP), ALLOCATABLE :: theta(:)
+    REAL(KIND=DP), ALLOCATABLE :: omega_g(:)
+    REAL(KIND=DP), ALLOCATABLE :: gamma_g(:)
     !
     ! Step field parameters
     !
@@ -60,12 +66,18 @@ MODULE params
     !
     ! Max propagation time in a.u.
     REAL(KIND=DP)      :: trange_au
+    ! Point in time in which taking the average of p22 commences
+    REAL(KIND=DP)      :: p22_start
     ! No of pts (nptspau+1) used in RK method per atomic unit
-    REAL               :: nptspau
+    REAL(KIND=DP)               :: nptspau
     ! RK step-size
     REAL(KIND=DP)      :: rk_step
     ! Total number of points used in propagation
     INTEGER            :: npts 
+    ! Print a total of out_pts points from RK
+    REAL(KIND=DP)      :: out_pts
+    ! Print every check_pt points in RK
+    INTEGER            :: check_pt
     !
     ! Directories
     !
@@ -109,6 +121,9 @@ CONTAINS
 
 SUBROUTINE get_params
     USE double
+    USE post_proc_params , ONLY : param_read_success
+    USE global_params , ONLY : wave_par, energy_par, intens_par, length_par, pi, &
+                               ev_to_au
     IMPLICIT NONE
     
     ! INPUT-RELATED VARIABLES
@@ -119,15 +134,17 @@ SUBROUTINE get_params
     INTEGER            :: ios = 0
     INTEGER            :: line = 0
     CHARACTER(LEN=6)   :: line_out
-    INTEGER            :: today(3), now(3)
+    CHARACTER(LEN=12)  :: now
+    CHARACTER(LEN=12)  :: today
     LOGICAL            :: ev=.FALSE., nm=.FALSE., au=.FALSE.
-    LOGICAL            :: in_exist
+    LOGICAL            :: use_nptspau = .FALSE.
 
     ! SET DEFAULTS
     I0           = 1.0_DP
     field        = 'cosfield'
     trange_au    = 1200.0_DP
     nptspau      = 100.0
+    out_pts      = 1
     in_folder    = '-#error'
     jname        = 'job'
     out_folder   = '.'
@@ -137,19 +154,27 @@ SUBROUTINE get_params
     pulse_phase  = 0.0_DP
     pulse_start  = 0.0_DP
     pulse_cycles = 6.0_DP
+    p22_start    = 0.0_DP
+
+    dist_nm = 20.0_DP
+    rad_nm = 7.5_DP
+    s_alpha = 2.0_DP
+    eps_0 = 1.0_DP
+    eps_s = 6.0_DP
+!    nk = 1
+!    theta(1) = 0.0_DP
+!    omega_g(1) = 0.091873378521923_DP
+!    gamma_g(1) = 0.00008_DP
+
 
     ! SETTING PARAMETERS
-    CALL IDATE(today)
-    CALL ITIME(now)
 
-    WRITE(timestamp,'("DATE: ",I2,"/",I2,"/",I4,", ",                         &
-                     &"TIME: ",I2,":",I2,":",I2)') today, now
+    CALL DATE_AND_TIME(DATE=today, TIME=now)
+    today = today(7:8)//'/'//today(5:6)//'/'//today(1:4)
+    now = now(1:2)//':'//now(3:4)//':'//now(5:6)
+    timestamp = TRIM(today)//', '//TRIM(now)
 
-    INQUIRE(FILE=in_file, EXIST=in_exist)
-    IF ( in_exist .EQV. .FALSE.) THEN
-        WRITE(*,*) 'Error: no input file detected. Exiting...'
-        CALL EXIT(1)
-    ENDIF
+    CALL check_file(in_file)
 
     OPEN(fh, FILE=in_file, STATUS='OLD', ACTION='READ')
     OPEN(fh_log, FILE=log_file, STATUS='REPLACE', ACTION='WRITE')
@@ -171,6 +196,45 @@ SUBROUTINE get_params
             buffer = buffer(pos+1:)
 
             SELECT CASE (label)
+
+            CASE ('nk')
+                READ(buffer, *, IOSTAT=ios) nk
+                CALL param_read_success('nk',fh_log)
+                ALLOCATE(theta(nk))
+                ALLOCATE(gamma_g(nk))
+                ALLOCATE(omega_g(nk))
+
+            CASE ('gamma_g')
+                READ(buffer, *, IOSTAT=ios) gamma_g
+                CALL param_read_success('gamma_g',fh_log)
+
+            CASE ('omega_g')
+                READ(buffer, *, IOSTAT=ios) omega_g
+                CALL param_read_success('omega_g',fh_log)
+
+            CASE ('m_h')
+                READ(buffer, *, IOSTAT=ios) theta
+                CALL param_read_success('theta',fh_log)
+
+            CASE ('eps_0')
+                READ(buffer, *, IOSTAT=ios) eps_0
+                CALL param_read_success('eps_0',fh_log)
+
+            CASE ('eps_s')
+                READ(buffer, *, IOSTAT=ios) eps_s
+                CALL param_read_success('eps_s',fh_log)
+
+            CASE ('s_alpha')
+                READ(buffer, *, IOSTAT=ios) s_alpha
+                CALL param_read_success('s_alpha',fh_log)
+
+            CASE ('rad_nm')
+                READ(buffer, *, IOSTAT=ios) rad_nm
+                CALL param_read_success('rad_nm',fh_log)
+
+            CASE ('dist_nm')
+                READ(buffer, *, IOSTAT=ios) dist_nm
+                CALL param_read_success('dist_nm',fh_log)
 
             CASE ('omega_ev')
                 READ(buffer, *, IOSTAT=ios) omega_ev
@@ -200,9 +264,23 @@ SUBROUTINE get_params
                 READ(buffer, *, IOSTAT=ios) trange_au
                 WRITE(fh_log,*) 'Read "trange_au" successfully.'
 
+            CASE ('p22_start')
+                READ(buffer, *, IOSTAT=ios) p22_start
+                WRITE(fh_log,*) 'Read "p22_start" successfully.'
+
             CASE ('nptspau')
                 READ(buffer, *, IOSTAT=ios) nptspau
                 WRITE(fh_log,*) 'Read "nptspau" successfully.'
+                use_nptspau = .TRUE.
+
+            CASE ('rk_step')
+                READ(buffer, *, IOSTAT=ios) rk_step
+                WRITE(fh_log,*) 'Read "rk_step" successfully.'
+                use_nptspau = .FALSE.
+
+            CASE ('out_pts')
+                READ(buffer, *, IOSTAT=ios) out_pts
+                WRITE(fh_log,*) 'Read "out_pts" successfully.'
 
             CASE ('in_folder')
                 READ(buffer, *, IOSTAT=ios) in_folder
@@ -270,6 +348,9 @@ SUBROUTINE get_params
         omega_au = wave_par/lambda
     ENDIF
 
+    omega_g = omega_g*ev_to_au
+    gamma_g = gamma_g*ev_to_au
+
     CLOSE(fh_log)
 
     IF (in_folder == '-#error') THEN
@@ -277,20 +358,26 @@ SUBROUTINE get_params
         CALL EXIT(0)
     ENDIF
 
-    INQUIRE(FILE=in_folder, EXIST=in_exist)
-    IF ( in_exist .EQV. .FALSE.) THEN
-        WRITE(*,*) 'Error: input folder does not exist. Exiting...'
-        CALL EXIT(1)
-    ENDIF
-
-
     ! Field calculations
     E0 = SQRT(I0 / intens_par)
     pulse_lim = 2.0_DP * pi * pulse_cycles / omega_au
+
+    dist = dist_nm/length_par
+    rad = rad_nm/length_par
+    eps_eff1 = (2.0_DP*eps_0 + eps_s)/(3.0_DP*eps_0)
+    eps_eff2 = (2.0_DP*eps_0 + eps_s)/3.0_DP
+    theta = gamma_g*theta
+
     
     ! Defining RK step size and npts from npstpau
-    rk_step     = 1.0_DP/REAL(nptspau,KIND=DP)
+    IF (use_nptspau) THEN
+        rk_step     = 1.0_DP/REAL(nptspau,KIND=DP)
+    ELSE
+        nptspau     = 1.0_DP/rk_step
+    ENDIF
+
     npts        = NINT(nptspau * trange_au)
+    check_pt    = NINT(REAL(npts)/out_pts)
 
     ! Getting file names
     params_file = TRIM(out_folder)//'/'//TRIM(jname)//'.params'
@@ -301,5 +388,18 @@ SUBROUTINE get_params
     CALL SYSTEM('mv tmp.log '//log_file)
 
 END SUBROUTINE get_params
+
+SUBROUTINE check_file(the_file)
+    IMPLICIT NONE
+    CHARACTER(LEN=*), INTENT(IN) :: the_file
+    LOGICAL :: in_exist
+
+    INQUIRE(FILE=the_file, EXIST=in_exist)
+    IF ( in_exist .EQV. .FALSE.) THEN
+        WRITE(*,*) 'Error: file '//TRIM(the_file)//' does not exist. Exiting...'
+        CALL EXIT(1)
+    ENDIF
+
+END SUBROUTINE check_file
 
 END MODULE params

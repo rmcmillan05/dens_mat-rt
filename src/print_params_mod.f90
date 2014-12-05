@@ -10,135 +10,122 @@ CONTAINS
 SUBROUTINE print_params
     USE double
     USE params , ONLY : out_folder, omega_ev, omega_au, lambda, I0, E0,       &
-                        jname, in_folder, timestamp, in_file, en, num_lev,    &
-                        params_file, trange_au, field, nptspau, rk_step, npts,&
+                        jname, in_folder, timestamp, in_file, en, npts,       &
+                        params_file, trange_au, field, nptspau, rk_step,      &
                         step_centre, step_width, step_height,                 &
                         pulse_start, pulse_cycles, pulse_phase
+    USE print_mat_mod
+    USE params , ONLY : dist, s_alpha, theta, eps_eff1, omega_g, gamma_g, rad, &
+                        eps_eff2, nk
+!    USE global_params , ONLY : ci
     IMPLICIT NONE
+!    COMPLEX(KIND=DP) :: G
+    INTEGER :: i
+    CHARACTER(LEN=3) :: istr
     
-    ! Format specifiers used
-    CHARACTER(LEN=256) :: char_fmat  = '(A30)'
-    CHARACTER(LEN=256) :: title_fmat = '(A45)'
-    CHARACTER(LEN=256) :: dir_fmat   = '(A35)'
-    CHARACTER(LEN=256) :: real_fmat  = '(ES16.8)'
-    CHARACTER(LEN=256) :: int_fmat   = '(I16)'
     ! Current working directory
     CHARACTER(LEN=256) :: cwd
-    ! Dummy index variables
-    INTEGER            :: i, j, s
+    ! File handle
+    INTEGER            :: fid = 10
 
     ! Get current working directory
     CALL GETCWD(cwd)
 
     ! Writing parameters to file
-    OPEN(UNIT=10, FILE=params_file, STATUS='REPLACE')
+    OPEN(fid, FILE=params_file, STATUS='REPLACE')
 
-        WRITE(10,title_fmat) '----------------------------------------------'
-        WRITE(10,title_fmat) TRIM(ADJUSTL(timestamp))
-        WRITE(10,title_fmat) '----------------------------------------------'
-        WRITE(10,title_fmat) '----------------------------------------------'
-        WRITE(10,title_fmat) 'Laser Properties                              '
-        WRITE(10,title_fmat) '----------------------------------------------'
-        WRITE(10,title_fmat)
-        WRITE(10,char_fmat,ADVANCE='NO') 'Field type                  : '
-        WRITE(10,char_fmat) field
+        CALL print_break(fid)
+        CALL print_str(ADJUSTR(TRIM(timestamp)), fid)
+        CALL print_break(fid)
+        CALL print_break(fid)
+        CALL print_str('Laser Properties', fid)
+        CALL print_break(fid)
+        WRITE(fid,*)
+        CALL print_str_str('Field type', field, fid)
         IF (field == 'step') THEN
-            WRITE(10,char_fmat,ADVANCE='NO') '> Step height               : '
-            WRITE(10,real_fmat) step_height
-            WRITE(10,char_fmat,ADVANCE='NO') '> Step width                : '
-            WRITE(10,real_fmat) step_width
-            WRITE(10,char_fmat,ADVANCE='NO') '> Step centre               : '
-            WRITE(10,real_fmat) step_centre
+            CALL print_str_num_real('> Step height', step_height, fid)
+            CALL print_str_num_real('> Step width', step_width, fid)
+            CALL print_str_num_real('> Step centre', step_centre, fid)
         ELSEIF (field == 'pulse') THEN
-            WRITE(10,char_fmat,ADVANCE='NO') '> Pulse start               : '
-            WRITE(10,real_fmat) pulse_start
-            WRITE(10,char_fmat,ADVANCE='NO') '> Pulse phase               : '
-            WRITE(10,real_fmat) pulse_phase
-            WRITE(10,char_fmat,ADVANCE='NO') '> Number of cycles          : '
-            WRITE(10,real_fmat) pulse_cycles
+            CALL print_str_num_real('> Pulse start', pulse_start, fid)
+            CALL print_str_num_real('> Pulse phase', pulse_phase, fid)
+            CALL print_str_num_real('> Number of cycles', pulse_cycles, fid)
         ENDIF
         IF (field /= 'step' .AND. field /= 'zero') THEN
-            WRITE(10,char_fmat,ADVANCE='NO') 'Laser Wavelength (nm)       : '
-            WRITE(10,real_fmat) lambda
-            WRITE(10,char_fmat,ADVANCE='NO') 'Laser Frequency (a.u.)      : '
-            WRITE(10,real_fmat) omega_au
-            WRITE(10,char_fmat,ADVANCE='NO') 'Laser Energy (eV)           : '
-            WRITE(10,real_fmat) omega_ev
-            WRITE(10,char_fmat,ADVANCE='NO') 'Laser Intensity (W/cm^2)    : '
-            WRITE(10,real_fmat) I0
-            WRITE(10,char_fmat,ADVANCE='NO') 'Laser Amplitude (E0) (a.u.) : '
-            WRITE(10,real_fmat) E0
+            CALL print_str_num_real('Laser Wavelength (nm)', lambda, fid)
+            CALL print_str_num_real('Laser Frequency (a.u.)', omega_au, fid)
+            CALL print_str_num_real('Laser Energy (eV)', omega_ev, fid)
+            CALL print_str_num_real('Laser Intenstiy (W/cm^2)', I0, fid)
+            CALL print_str_num_real('Laser Amplitude (E0) (a.u.)', E0, fid)
         ENDIF
 
-        WRITE(10,title_fmat)
-        WRITE(10,title_fmat) '----------------------------------------------'
-        WRITE(10,title_fmat) 'Runge-Kutta Parameters                        '
-        WRITE(10,title_fmat) '----------------------------------------------'
-        WRITE(10,title_fmat)
-        WRITE(10,char_fmat,ADVANCE='NO') 'Number of Points per a.u.   : '
-        WRITE(10,real_fmat) nptspau
-        WRITE(10,char_fmat,ADVANCE='NO') 'Total number of points used : '
-        WRITE(10,int_fmat) npts
-        WRITE(10,char_fmat,ADVANCE='NO') 'RK time-step (a.u.)         : '
-        WRITE(10,real_fmat) rk_step
-        WRITE(10,char_fmat,ADVANCE='NO') 'Total Propagation Time (a.u): '
-        WRITE(10,real_fmat) trange_au
-        WRITE(10,title_fmat) 
-        WRITE(10,title_fmat) '----------------------------------------------'
-        WRITE(10,title_fmat) 'Energy Levels and Differences                 '
-        WRITE(10,title_fmat) '----------------------------------------------'
-        WRITE(10,title_fmat) 
-
-        IF ( ABS(en(1) - 0.0_DP) < 1.0E-16 ) THEN
-            s = 2
-        ELSE
-            s = 1
-        ENDIF
-        
-        DO i=s,num_lev
-            DO j=s,i
-                IF ( i == j ) THEN
-                    WRITE(10,real_fmat) REAL(en(i),KIND=DP)
-                ELSE
-                    WRITE(10,real_fmat) REAL(ABS(en(i) - en(j)),KIND=DP)
-                ENDIF
-            ENDDO
+        WRITE(fid,*)
+        DO i = 1,nk
+            WRITE(istr,'(I3)') i
+            CALL print_str_num_real('theta_g_'//ADJUSTL(istr)//' (a.u.)', theta(i), fid)
+            CALL print_str_num_real('omega_g_'//ADJUSTL(istr)//' (a.u.)', omega_g(i), fid)
+            CALL print_str_num_real('gamma_g_'//ADJUSTL(istr)//' (a.u.)', gamma_g(i), fid)
         ENDDO
+        CALL print_str_num_real('Separation (a.u.)', dist, fid)
+        CALL print_str_num_real('MNP Diameter (a.u.)', rad, fid)
+        CALL print_str_num_real('s_alpha (a.u.)', s_alpha, fid)
+        CALL print_str_num_real('eps_eff1 (a.u.)', eps_eff1, fid)
+        CALL print_str_num_real('eps_eff2 (a.u.)', eps_eff2, fid)
+!        G = theta*(omega_au-omega_g+ci*gamma_g)/((omega_au-omega_g)**2+gamma_g**2)
+!        G = s_alpha**2*G*rad**3*mu(1,2)**2/(eps_eff1*eps_eff2*dist**6)
+!        CALL print_str_num_complex('G', G, fid)
+!        CALL print_str_num_real('strength of eff. field', s_alpha*theta &
+!                                                         /(eps_eff1*dist**3),  &
+!                                                        fid)
 
-        WRITE(10,title_fmat)
-        WRITE(10,title_fmat) '----------------------------------------------'
-        WRITE(10,title_fmat) 'Directories                                   '
-        WRITE(10,title_fmat) '----------------------------------------------'
-        WRITE(10,title_fmat)
-        WRITE(10,char_fmat)'Root folder:                  '
-        WRITE(10,dir_fmat) cwd
-        WRITE(10,*)
-        WRITE(10,char_fmat)'Input folder:                 '
-        WRITE(10,dir_fmat) in_folder
-        WRITE(10,*)
-        WRITE(10,char_fmat)'Output folder:                '
-        WRITE(10,dir_fmat) out_folder
-        WRITE(10,*)
-        WRITE(10,char_fmat)'Output file prefix:           '
-        WRITE(10,dir_fmat) jname
+        WRITE(fid, *)
+        CALL print_break(fid)
+        CALL print_str('Runge-Kutta Parameters', fid)
+        CALL print_break(fid)
+        WRITE(fid, *)
+        CALL print_str_num_real('Number of Points per a.u.', nptspau, fid)
+        CALL print_str_num_real('Total number of points used',                 &
+                                 REAL(npts, KIND=DP), fid)
+        CALL print_str_num_real('RK time-step (a.u.)', rk_step, fid)
+        CALL print_str_num_real('Total Propagation Time (a.u)', trange_au, fid)
+        WRITE(fid, *)
+        CALL print_break(fid)
+        CALL print_str('Energy Levels', fid)
+        CALL print_break(fid)
+        WRITE(fid, *)
+        CALL print_vec_real(en, fid)
+        WRITE(fid, *)
+        CALL print_break(fid)
+        CALL print_str('Directories', fid)
+        CALL print_break(fid)
+        WRITE(fid, *)
+        CALL print_str('Input folder', fid)
+        CALL print_str(TRIM(cwd)//'/'//TRIM(in_folder), fid)
+        WRITE(fid, *)
+        CALL print_str('Output folder', fid)
+        CALL print_str(TRIM(cwd)//'/'//TRIM(out_folder), fid)
+        WRITE(fid, *)
+        CALL print_str('Output file prefix', fid)
+        CALL print_str(jname, fid)
 
-        WRITE(10,title_fmat)
-        WRITE(10,title_fmat) '----------------------------------------------'
-        WRITE(10,title_fmat) 'Input file used                               '
-        WRITE(10,title_fmat) '----------------------------------------------'
-        WRITE(10,title_fmat)
-        WRITE(10,dir_fmat) in_file
-        WRITE(10,title_fmat)
+        WRITE(fid, *)
+        CALL print_break(fid)
+        CALL print_str('Input file used', fid)
+        CALL print_break(fid)
+        WRITE(fid, *)
+        CALL print_str(in_file, fid)
+        WRITE(fid, *)
 
     CLOSE(10)
 
     CALL SYSTEM('cat '//TRIM(in_file)//' >> '//params_file)
     OPEN(UNIT=10, FILE=params_file, STATUS='OLD', POSITION='APPEND')
 
-        WRITE(10,title_fmat)
-        WRITE(10,title_fmat) '----------------------------------------------'
-        WRITE(10,title_fmat) '                   - EOF -                    '
-        WRITE(10,title_fmat) '----------------------------------------------'
+        WRITE(fid, *)
+        CALL print_break(fid)
+        WRITE(fid,'(A80)') '                                    - EOF -    &
+                           &                                 '
+        CALL print_break(fid)
 
     CLOSE(10)
 

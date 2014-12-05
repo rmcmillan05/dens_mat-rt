@@ -49,8 +49,9 @@ END FUNCTION step
 
 FUNCTION pulse(t_in)
     USE double
-    USE params , ONLY : omega_au, E0, pi, pulse_phase, pulse_lim, omega_au,   &
+    USE params , ONLY : omega_au, E0, pulse_phase, pulse_lim, omega_au,   &
                         pulse_start
+    USE global_params , ONLY : pi
     IMPLICIT NONE
 
     REAL(KIND=DP), INTENT(IN) :: t_in
@@ -75,7 +76,7 @@ FUNCTION e_sqd(t)
     USE double
     USE gold_dielectric , ONLY : au_gamma
     USE params , ONLY : omega_au, E0
-    USE sqd_mnp_params , ONLY : s_alpha, eps_eff1, dist, rad
+    USE params , ONLY : s_alpha, eps_eff1, dist, rad
     IMPLICIT NONE
 
     REAL(KIND=DP), INTENT(IN) :: t
@@ -84,8 +85,8 @@ FUNCTION e_sqd(t)
     COMPLEX(KIND=DP)          :: gma
 
     gma = au_gamma(omega_au)
-    p_mnp = 0.5_DP*E0*rad**3 * ( REALPART(gma)*COS(omega_au*t)                &
-                                +IMAGPART(gma)*SIN(omega_au*t) )
+    p_mnp = 0.5_DP*E0*rad**3 * ( REAL(gma)*COS(omega_au*t)                    &
+                                +AIMAG(gma)*SIN(omega_au*t) )
     e_sqd = E0*COS(omega_au*t) + s_alpha*p_mnp/eps_eff1/dist**3
 
 END FUNCTION e_sqd

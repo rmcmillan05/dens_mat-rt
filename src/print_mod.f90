@@ -1,4 +1,4 @@
-MODULE print_mat_mod
+MODULE print_mod
     USE double
     IMPLICIT NONE
 
@@ -28,6 +28,34 @@ SUBROUTINE print_str(str_in, out_id_in)
     WRITE(out_id,char_fmt) str_out
 
 END SUBROUTINE print_str
+
+SUBROUTINE print_eof(out_id_in)
+    USE double
+    IMPLICIT NONE
+
+    INTEGER, INTENT(IN) :: out_id_in
+
+    CALL print_break(out_id_in)
+    WRITE(out_id_in,'(A80)') '                                    - EOF -    &
+                       &                                 '
+    CALL print_break(out_id_in)
+
+END SUBROUTINE print_eof
+
+SUBROUTINE print_title(str_in, out_id_in)
+    USE double
+    IMPLICIT NONE
+
+    CHARACTER(LEN=*), INTENT(IN) :: str_in
+    INTEGER, INTENT(IN) :: out_id_in
+
+
+    CALL print_break(out_id_in)
+    CALL print_str(str_in, out_id_in)
+    CALL print_break(out_id_in)
+    WRITE(out_id_in, *)
+
+END SUBROUTINE print_title
 
 SUBROUTINE print_str_str(str1_in, str2_in, out_id)
     IMPLICIT NONE
@@ -262,4 +290,4 @@ SUBROUTINE print_break(fid)
 
 END SUBROUTINE print_break
 
-END MODULE print_mat_mod
+END MODULE print_mod

@@ -1,0 +1,55 @@
+IN_FOLDER : Folder containing the following matrix input files which describe
+            the system:
+            > mu.txt (dipole moment operator; complex, a.u.)
+            > en.txt (vector containing energy levels of system; real , eV)
+            > gma.txt (damping coefficients; real, a.u.)
+            > big_gma.txt (alternative damping coefficients; real, a.u.)
+            > rho.txt (density matrix at t=0; complex, arbitrary units)
+            > rho_eq.txt (density matrix at equilibrium, complex, arbitrary units)
+            > positions.txt (vector containing the element indicies of the
+                             density matrix to be output to file)
+
+NAME : Job name of the executable. Output files will be prefixed with this.
+
+OUT_FOLDER : Output folder where output files will be created.
+
+TRANGE : The density matrix EOM will be integrated from t=0 up to t=TRANGE
+         (a.u. of time).
+
+RK_STEP : Time-step used in Runge-Kutta method (a.u. of time).
+
+OUT_PTS : Number of points to be output to file.
+
+FIELD : Type of externally applied field. Choose from
+        > COSFIELD - E0*cos(OMEGA*t)
+        > SINFIELD - E0*sin(OMEGA*t)
+        > GAUSS - FIELD_HEIGHT exp( -4*ln(2)*(t-FIELD_CENTRE)^2 / FIELD_WIDTH^2 )
+        > PULSE - pulse envelope carrying PULSE_CYCLES cycles of frequency OMEGA,
+                  phase PULSE_PHASE commencing at time PULSE_START (a.u.)
+
+I0 : Field intensity (W/cm^2)
+
+FIELD_HEIGHT : Maximum amplitude of gaussian field (a.u. of amplitude)
+
+FIELD_CENTRE : Centre of gaussian field (a.u. of time)
+
+FIELD_WIDTH : Full width at half-maximum of gaussian field (a.u. of time)
+        
+OMEGA : Field frequency. This is calculated at OMEGA_NPTS equally spaced points
+        between OMEGA_FROM and OMEGA_TO (both given in eV)
+
+COUPLED : Logical variable. If .TRUE. then the system is coupled
+semi-classically with a metal nanoparticle (MNP) of radius RAD (nm) separated
+by distance DIST (nm). If S_ALPHA=2 then the field external field is parallel
+to the line joining the centres; if S_ALPHA=-1 the field is perpendicular. The
+MNP has frequency-dependent dielectric function, chi(omega) approximated by a sum of
+lorentzians:
+
+chi(omega) = sum_{k=1}^{N_K} GAMMA_K * M_K * { 1/(OMEGA_K - omega - i*GAMMA_K)
+                                            + 1/(OMEGA_K + omega + i*GAMMA_K) }
+
+Q_SQD_START : rho(2,2) is integrated from Q_SQD_START (a.u. of time) up to
+TRANGE.
+
+Q_MNP_START : The product of the time-derivative of the current with the
+internal field is integrated from Q_MNP_START(a.u. of time) up to TRANGE.

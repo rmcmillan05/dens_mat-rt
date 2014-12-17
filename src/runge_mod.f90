@@ -1,32 +1,35 @@
 MODULE runge_mod
     USE double
+    USE params , ONLY : rk_step, nk
+    USE params , ONLY : en, gma, field, mu, num_lev, rho_eq
+    USE params , ONLY : gamma_g, omega_g, coupled, &
+                        rad, theta, s_alpha, eps_eff2, nk, dist, eps_eff1
     IMPLICIT NONE
 
     PRIVATE
     PUBLIC :: runge
 
+    REAL(KIND=DP) :: P_sqd, P_mnp, E_sqd, E_mnp
 CONTAINS
 
 SUBROUTINE runge
     USE double
-    USE params , ONLY : num_lev, field, npts, rk_step, positions, mu, rho_0,  &
-                        out_file, npos, trange_au, omega_ev,&
-                        rad, theta, s_alpha, eps_eff2, nk, omega_g, gamma_g, &
-                        dist, eps_eff1, en, gma, rho_eq, E0, omega_au, p22_start, &
-                        check_pt
+    USE params , ONLY : npts, rk_step, positions, rho_0,  &
+                        out_file, npos, trange, &
+                        omega, Q_sqd_start, Q_mnp_start, &
+                        check_pt, proc_id
     USE fields
-    USE global_params , ONLY : pi, std_out, nm_par, power_par, ci
-    USE print_mat_mod
+    USE global_params , ONLY : std_out, power_par, au_to_ev, real_fmt
+    USE print_mod
     IMPLICIT NONE
 
     ! rho(t)
     COMPLEX(KIND=DP), ALLOCATABLE                 :: rho(:,:)
-    COMPLEX(KIND=DP), ALLOCATABLE :: rho_tmp(:,:)
     COMPLEX(KIND=DP) :: s(nk)
     ! RK variables
     COMPLEX(KIND=DP), ALLOCATABLE, DIMENSION(:,:,:) :: k_rho
     COMPLEX(KIND=DP) :: k_s(4,nk)
-    REAL(KIND=DP) :: P_mnp
+!    REAL(KIND=DP) :: P_mnp
     REAL(KIND=DP) :: fac(3)
     ! Dummy index variables
     INTEGER                                       :: i, j
@@ -35,193 +38,152 @@ SUBROUTINE runge
     ! Commuted matrix
     COMPLEX(KIND=DP), ALLOCATABLE                 :: comm(:,:)
     ! Dipole at each time-step
-    REAL(KIND=DP)                                 :: P_sqd
+!    REAL(KIND=DP)                                 :: P_sqd
     REAL(KIND=DP)  :: Q_mnp
     REAL(KIND=DP)  :: Q_sqd
     REAL(KIND=DP)  :: Q
     REAL(KIND=DP)  :: dpdt_mnp
-!    REAL(KIND=DP)  :: dpdt_sqd
     REAL(KIND=DP)  :: P_sqd_old
-    REAL(KIND=DP)  :: E_mnp
-    REAL(KIND=DP)  :: E_sqd
+!    REAL(KIND=DP)  :: E_mnp
+!    REAL(KIND=DP)  :: E_sqd
     !
-    ! Title format specifier
-    CHARACTER(LEN=64)                             :: charfmat = '(ES22.14)'
     ! Title for rho element column
     CHARACTER(LEN=2)                              :: poschar
-    ! Title for field column
-    CHARACTER(LEN=16)                             :: fieldchar
     ! File id for output
-    INTEGER                                       :: out_id=50
-    !
-    ! Percentage increment in screen update
-!    REAL, PARAMETER                               :: pfraco=5.0 
-    ! Percentage increment in screen update
-!    REAL                                          :: pfrac=0.0 
-    ! Percentage complete
-!    REAL                                          :: pcomp
+    INTEGER                                       :: out_id
 
     ! Write output to file
+    out_id = 30 + proc_id
     OPEN(UNIT=out_id, FILE=out_file, STATUS='REPLACE')
 
     ALLOCATE(                                                                 &
              rho(num_lev,num_lev),                                            &
-             rho_tmp(num_lev,num_lev),                                        &
              comm(num_lev,num_lev),                                           &
              k_rho(4,num_lev,num_lev)                                             &
              )
     
     ! Initializing
     rho    = rho_0
-    s = 0.0_DP
     t      = 0.0_DP
-    P_sqd = 0.0_DP
-    P_mnp = 0.0_DP
+
+    IF ( coupled ) THEN
+        s = 0.0_DP
+        Q_mnp = 0.0_DP
+        Q_sqd = 0.0_DP
+        E_sqd = efield(field, t)
+        E_mnp = efield(field, t)
+        P_sqd = 0.0_DP
+        P_mnp = 0.0_DP
+    ENDIF
+
 
     ! Printing column headers
     WRITE(out_id, '(A22)', ADVANCE='NO') ' t                    '
-    fieldchar=' '//TRIM(field)//'(t)'
-    WRITE(out_id, '(A22)', ADVANCE='NO') fieldchar
-    WRITE(out_id, '(A22)', ADVANCE='NO') ' E_SQD                '
-    WRITE(out_id, '(A22)', ADVANCE='NO') ' E_SQD^2              '
-    WRITE(out_id, '(A22)', ADVANCE='NO') ' E_MNP                '
-    WRITE(out_id, '(A22)', ADVANCE='NO') ' E_MNP^2              '
-    WRITE(out_id, '(A22)', ADVANCE='NO') ' P_SQD                '
-    WRITE(out_id, '(A22)', ADVANCE='NO') ' P_MNP                '
+    WRITE(out_id, '(A22)', ADVANCE='NO') ' field                '
+    IF ( coupled ) THEN
+        WRITE(out_id, '(A22)', ADVANCE='NO') ' E_SQD                '
+        WRITE(out_id, '(A22)', ADVANCE='NO') ' E_MNP                '
+        WRITE(out_id, '(A22)', ADVANCE='NO') ' P_SQD                '
+        WRITE(out_id, '(A22)', ADVANCE='NO') ' P_MNP                '
+    ENDIF
     DO j = 1, npos 
         WRITE(out_id, '(A5)', ADVANCE='NO') ' rho_'
         WRITE(poschar, '(I2)') positions(j,1)
         WRITE(out_id, '(A3)', ADVANCE='NO') poschar//','
         WRITE(poschar, '(I2)') positions(j,2)
         WRITE(out_id, '(A2)', ADVANCE='NO') poschar
-        WRITE(out_id, '(A30)', ADVANCE='NO') '                      '
+        WRITE(out_id, '(A34)', ADVANCE='NO') ' '
     ENDDO
     WRITE(out_id,*)
-
-    ! Printing values at t=0
-    WRITE(out_id, charfmat, ADVANCE='NO') t
-    WRITE(out_id, charfmat, ADVANCE='NO') efield(field, t)
-    WRITE(out_id, charfmat, ADVANCE='NO') efield(field, t)
-    WRITE(out_id, charfmat, ADVANCE='NO') efield(field, t)**2
-    WRITE(out_id, charfmat, ADVANCE='NO') efield(field, t)
-    WRITE(out_id, charfmat, ADVANCE='NO') efield(field, t)**2
-    WRITE(out_id, charfmat, ADVANCE='NO') P_sqd
-    WRITE(out_id, charfmat, ADVANCE='NO') P_mnp
-    DO j = 1, npos
-            WRITE(out_id, charfmat, ADVANCE='NO')                             &
-            REAL(rho(positions(j,1),positions(j,2)),KIND=DP)
-            WRITE(out_id, charfmat, ADVANCE='NO')                             &
-            AIMAG(rho(positions(j,1),positions(j,2)))
-    ENDDO                                 
-
-    WRITE(out_id,*)
-
-!    ! Percentage complete
-!    pcomp = REAL(npts)/pfraco
 
     ! Parameters in RK algorithm
     fac(1) = 0.5_DP
     fac(2) = 0.5_DP
     fac(3) = 1.0_DP
 
-    Q_mnp = 0.0_DP
-    Q_sqd = 0.0_DP
-
-    DO i = 1, npts
-
-        CALL rk_de(rho,                     s,                 t,                k_rho(1,:,:), k_s(1,:))
-        k_rho(1,:,:) = rk_step*k_rho(1,:,:)
-        k_s(1,:) = rk_step*k_s(1,:)
-
-        CALL rk_de(rho+0.5_DP*k_rho(1,:,:), s+0.5_DP*k_s(1,:), t+0.5_DP*rk_step, k_rho(2,:,:), k_s(2,:))
-        k_rho(2,:,:) = rk_step*k_rho(2,:,:)
-        k_s(2,:) = rk_step*k_s(2,:)
-
-        CALL rk_de(rho+0.5_DP*k_rho(2,:,:), s+0.5_DP*k_s(2,:), t+0.5_DP*rk_step, k_rho(3,:,:), k_s(3,:))
-        k_rho(3,:,:) = rk_step*k_rho(3,:,:)
-        k_s(3,:) = rk_step*k_s(3,:)
-
-        CALL rk_de(rho+k_rho(3,:,:),        s+k_s(3,:),        t+rk_step,        k_rho(4,:,:), k_s(4,:))
-        k_rho(4,:,:) = rk_step*k_rho(4,:,:)
-        k_s(4,:) = rk_step*k_s(4,:)
-
-        rho = rho + (k_rho(1,:,:) + 2.0_DP*k_rho(2,:,:) + 2.0_DP*k_rho(3,:,:) + k_rho(4,:,:))/6.0_DP
-        s = s + (k_s(1,:) + 2.0_DP*k_s(2,:) + 2.0_DP*k_s(3,:) + k_s(4,:))/6.0_DP
-        t = t + rk_step
-
-        P_sqd_old = P_sqd
-
-        P_sqd = REAL(trace(MATMUL(rho,mu)))
-
-        ! Calculating gold dipole
-        P_mnp = 0.0_DP
-        dpdt_mnp = 0.0_DP
-        DO j=1,nk
-            P_mnp = P_mnp + rad**3*theta(j)*2.0_DP*REAL(s(j))
-            dpdt_mnp = dpdt_mnp + rad**3*2.0_DP*theta(j)*( omega_g(j)*AIMAG(s(j)) - &
-                                              gamma_g(j)*REAL(s(j)) )
-        ENDDO
-
-        E_mnp = efield(field,t) + s_alpha*P_sqd/eps_eff2/dist**3
-        E_sqd = efield(field,t) + s_alpha*P_mnp/eps_eff1/dist**3
-
-        Q_mnp = Q_mnp + dpdt_mnp*E_mnp
-
-        IF ( t >= p22_start ) THEN
-            ! integrating rho(2,2)
-            Q_sqd = Q_sqd + rho(2,2)
-        ENDIF
+    DO i = 0, npts
 
         IF ( MOD(i, check_pt) == 0 ) THEN
             !! PRINTING VALUES !!
-            WRITE(out_id, charfmat, ADVANCE='NO') t  
-            WRITE(out_id, charfmat, ADVANCE='NO') efield(field, t)
-            WRITE(out_id, charfmat, ADVANCE='NO') E_sqd
-            WRITE(out_id, charfmat, ADVANCE='NO') E_sqd**2
-            WRITE(out_id, charfmat, ADVANCE='NO') E_mnp
-            WRITE(out_id, charfmat, ADVANCE='NO') E_mnp**2
-            WRITE(out_id, charfmat, ADVANCE='NO') P_sqd
-            WRITE(out_id, charfmat, ADVANCE='NO') P_mnp
+            WRITE(out_id, real_fmt, ADVANCE='NO') t  
+            WRITE(out_id, real_fmt, ADVANCE='NO') efield(field, t)
+            IF ( coupled ) THEN
+                WRITE(out_id, real_fmt, ADVANCE='NO') E_sqd
+                WRITE(out_id, real_fmt, ADVANCE='NO') E_mnp
+                WRITE(out_id, real_fmt, ADVANCE='NO') P_sqd
+                WRITE(out_id, real_fmt, ADVANCE='NO') P_mnp
+            ENDIF
             DO j = 1, npos
-                    WRITE(out_id, charfmat, ADVANCE='NO')                         &
+                    WRITE(out_id, real_fmt, ADVANCE='NO')                         &
                     REAL(rho(positions(j,1),positions(j,2)),KIND=DP)
-                    WRITE(out_id, charfmat, ADVANCE='NO')                         &
+                    WRITE(out_id, real_fmt, ADVANCE='NO')                         &
                     AIMAG(rho(positions(j,1),positions(j,2)))
             ENDDO                                 
             WRITE(out_id,*)
         ENDIF
-       
-        ! Percentage complete
-!        pcomp = 100.0*REAL(i)/REAL(npts-1)
-!        IF (ABS(pcomp-pfrac) <= 1.0E-2) THEN
-!            WRITE(*,'(A1,A12,I3,A13)',ADVANCE='NO') char(13),                 &
-!                  '||------->  ', NINT(pcomp), '%  <-------||'
-!              pfrac = pfrac+pfraco
-!        ENDIF
+      
+        IF ( i == npts ) THEN
+           EXIT
+        ENDIF
+
+        CALL rk_de(t,                rho,                     k_rho(1,:,:), s,                 k_s(1,:))
+        CALL rk_de(t+0.5_DP*rk_step, rho+0.5_DP*k_rho(1,:,:), k_rho(2,:,:), s+0.5_DP*k_s(1,:), k_s(2,:))
+        CALL rk_de(t+0.5_DP*rk_step, rho+0.5_DP*k_rho(2,:,:), k_rho(3,:,:), s+0.5_DP*k_s(2,:), k_s(3,:))
+        CALL rk_de(t+rk_step,        rho+k_rho(3,:,:),        k_rho(4,:,:), s+k_s(3,:),        k_s(4,:))
+
+        rho = rho + (k_rho(1,:,:) + 2.0_DP*k_rho(2,:,:) + 2.0_DP*k_rho(3,:,:) + k_rho(4,:,:))/6.0_DP
+        t = t + rk_step
+
+        IF ( coupled ) THEN
+            s = s + (k_s(1,:) + 2.0_DP*k_s(2,:) + 2.0_DP*k_s(3,:) + k_s(4,:))/6.0_DP
+            P_sqd_old = P_sqd
+            P_sqd = REAL(trace(MATMUL(rho,mu)))
+
+            ! Calculating gold dipole
+            P_mnp = 0.0_DP
+            dpdt_mnp = 0.0_DP
+            DO j=1,nk
+                P_mnp = P_mnp + rad**3*theta(j)*2.0_DP*REAL(s(j))
+                dpdt_mnp = dpdt_mnp + rad**3*2.0_DP*theta(j)*( omega_g(j)*AIMAG(s(j)) - &
+                                                  gamma_g(j)*REAL(s(j)) )
+            ENDDO
+
+            E_mnp = efield(field,t) + s_alpha*P_sqd/eps_eff2/dist**3
+            E_sqd = efield(field,t) + s_alpha*P_mnp/eps_eff1/dist**3
+
+            IF ( t >= Q_mnp_start ) THEN
+                ! integrating E_mnp*dp/dt
+                Q_mnp = Q_mnp + dpdt_mnp*E_mnp
+            ENDIF
+
+            IF ( t >= Q_sqd_start ) THEN
+                ! integrating rho(2,2)
+                Q_sqd = Q_sqd + REAL(rho(2,2))
+            ENDIF
+        ENDIF
+
 
     ENDDO
 
-    Q_mnp = power_par*Q_mnp*rk_step/trange_au
+    IF ( coupled ) THEN
+        Q_mnp = power_par*Q_mnp*rk_step/(trange-Q_mnp_start)
+        Q_sqd = power_par*omega*gma(1,1)*Q_sqd*rk_step/(trange-Q_sqd_start)
+        Q = Q_mnp + Q_sqd
 
-    Q_sqd = power_par*omega_au*gma(1,1)*Q_sqd*rk_step/(trange_au-p22_start)
-
-    Q = Q_mnp + Q_sqd
-
-    WRITE(std_out,charfmat, ADVANCE='NO') omega_ev
-    WRITE(std_out,charfmat, ADVANCE='NO') Q_mnp
-    WRITE(std_out,charfmat, ADVANCE='NO') Q_sqd
-    WRITE(std_out,charfmat) Q
+        WRITE(std_out,real_fmt, ADVANCE='NO') omega*au_to_ev
+        WRITE(std_out,real_fmt, ADVANCE='NO') Q_mnp
+        WRITE(std_out,real_fmt, ADVANCE='NO') Q_sqd
+        WRITE(std_out,real_fmt) Q
+    ENDIF
 
     CLOSE(out_id)
 
 END SUBROUTINE runge
 
-SUBROUTINE rk_de(rho_in, s_in, t_in, rho_out, s_out)
+SUBROUTINE rk_de(t_in, rho_in, rho_out, s_in, s_out)
     USE double
-    USE params , ONLY : s_alpha, eps_eff1, eps_eff2, dist, theta, omega_g, &
-                            gamma_g, rad, nk
-    USE params , ONLY : en, gma, field, mu, num_lev, rho_eq
     USE global_params , ONLY : ci
+    USE params , ONLY : eps_eff1
     USE fields , ONLY : efield
     IMPLICIT NONE
 
@@ -231,67 +193,41 @@ SUBROUTINE rk_de(rho_in, s_in, t_in, rho_out, s_out)
     COMPLEX(KIND=DP), INTENT(OUT) :: rho_out(num_lev,num_lev)
     COMPLEX(KIND=DP) :: comm(num_lev,num_lev)
     COMPLEX(KIND=DP), INTENT(OUT) :: s_out(nk)
-    REAL(KIND=DP) :: P_sqd, P_mnp, E_sqd, E_mnp
+    REAL(KIND=DP) :: ext_field
 
     INTEGER :: n, m
 
-    P_sqd = REAL(trace(MATMUL(mu,rho_in)))
-    P_mnp = 0.0_DP
-    DO n=1,nk
-        P_mnp = P_mnp + rad**3*theta(n)*2.0_DP*REAL(s_in(n))
-!        P_mnp = P_mnp + (theta(n)*2.0_DP*REAL(s_in(n)))
-    ENDDO
-    E_sqd = efield(field,t_in) + s_alpha*P_mnp/(eps_eff1*dist**3)
-    E_mnp = efield(field,t_in) + s_alpha*P_sqd/(eps_eff2*dist**3)
+    IF ( coupled ) THEN
+
+        P_sqd = REAL(trace(MATMUL(rho_in,mu)))
+        P_mnp = 0.0_DP
+        DO n=1,nk
+            P_mnp = P_mnp + rad**3*theta(n)*2.0_DP*REAL(s_in(n))
+        ENDDO
+
+        E_mnp = efield(field,t_in) + s_alpha*P_sqd/eps_eff2/dist**3
+        E_sqd = efield(field,t_in) + s_alpha*P_mnp/eps_eff1/dist**3
+
+        s_out = -(gamma_g + ci*omega_g)*s_in + ci*E_mnp
+        s_out = s_out*rk_step
+
+        ext_field = E_sqd/eps_eff1
+    ELSE
+        ext_field = efield(field, t_in)
+    ENDIF
 
     comm = commute(mu, rho_in)
     DO n=1,num_lev
         DO m=1,num_lev
            rho_out(n,m) = -ci*(en(n)-en(m))*rho_in(n,m)                 &
                           - gma(n,m)*(rho_in(n,m) - rho_eq(n,m))        &
-                          + ci*E_sqd*comm(n,m)
+                          + ci*ext_field*comm(n,m)
         ENDDO
     ENDDO
 
-!    DO n=1,nk
-!        s_out(n) = -(gamma_g(n) + ci*omega_g(n))*s_in(n) + ci*E_mnp
-!    ENDDO
-   
-    s_out = -(gamma_g + ci*omega_g)*s_in + ci*E_mnp
+    rho_out = rho_out*rk_step
 
 END SUBROUTINE rk_de
-
-FUNCTION runge_k_nm(n, m, field_t, rho, comm)
-        USE double
-        USE fields
-        USE params , ONLY : en, num_lev, gma, big_gma, rk_step, &
-                            gma, big_gma, rho_eq
-        USE global_params , ONLY : ci
-        IMPLICIT NONE
-        COMPLEX(KIND=DP), INTENT(IN), DIMENSION(:,:) :: rho, comm
-        INTEGER, INTENT(IN) :: n, m
-        REAL(KIND=DP), INTENT(IN) :: field_t
-        COMPLEX(KIND=DP) :: runge_k_nm
-        INTEGER :: j
-
-        runge_k_nm = -ci * (en(n) - en(m)) * rho(n,m)                         &
-                     +ci * field_t * comm(n,m)                        &
-                     - gma(n,m) * rho(n,m)                                    &
-                     + gma(n,m) * rho_eq(n,m)
-
-        IF ( n == m ) THEN
-            DO j = 1,num_lev
-                IF ( j > n) THEN
-                    runge_k_nm = runge_k_nm + big_gma(n,j)*rho(j,j)
-                ELSEIF ( j < n) THEN
-                    runge_k_nm = runge_k_nm - big_gma(j,n)*rho(n,n)
-                ENDIF
-            ENDDO
-        ENDIF
-
-        runge_k_nm = rk_step * runge_k_nm
-
-END FUNCTION
 
 FUNCTION trace(A)
     USE double

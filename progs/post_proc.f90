@@ -1,10 +1,10 @@
 PROGRAM post_proc
     USE double
-    USE print_mat_mod
+    USE print_mod
     USE num_lines , ONLY : numlines
     USE freq_analysis , ONLY : get_freq_amp, find_closest, remove_duplicates
     USE global_params , ONLY : std_out, energy_par, wave_par
-    USE post_proc_params , ONLY : get_params_pp, freqs_in, field_in_file,      &
+    USE params , ONLY : get_params_pp, freqs_in, field_in_file,      &
                                   probe_freq, field_out_file, freqs_out_file,  &
                                   read_col, in_file
     IMPLICIT NONE

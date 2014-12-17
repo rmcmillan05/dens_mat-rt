@@ -101,6 +101,10 @@ elif [ "$F90" == "ifort" ]; then
     LFLAG='-module'
 fi
 
+###################
+##################
+F90='mpif90'
+
 echo '# MAIN PROGRAMS TO COMPILE' >> $FILE
 EXEC=()
 PROG=()
@@ -172,7 +176,7 @@ echo '# LINKING lin_resp' >> $FILE
     echo "${LRPROG}: ${LRSRC}" >> $FILE
     echo -e "\t@echo '----------------------'" >> $FILE
     echo -e "\t@echo 'Linking lin_resp'" >> $FILE
-    if [ $INPATH != '' ]; then
+    if [[ $INPATH != '' ]]; then
         echo -e "\t@sed \"s=PATHTOBIN=$INPATH=\" $LRSRC > $LRPROG" >> $FILE
     else
         echo -e "\t@sed \"s=PATHTOBIN=./$BINDIR=\" $LRSRC > $LRPROG" >> $FILE

@@ -35,6 +35,10 @@ for k in $*; do
                 R=0
                 continue
             fi
+            if [[ "$i" == 'mpi' ]]; then
+                R=0
+                continue
+            fi
             if [[ $R == 1 ]]; then
                 echo ${i%%,*}
                 R=0

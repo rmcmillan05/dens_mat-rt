@@ -149,7 +149,7 @@ SUBROUTINE runge
             ENDDO
 
             E_mnp = efield(field,t) + s_alpha*P_sqd/eps_eff2/dist**3
-            E_sqd = efield(field,t) + s_alpha*P_mnp/eps_eff1/dist**3
+            E_sqd = efield(field,t)/eps_eff1 + s_alpha*P_mnp/eps_eff1/dist**3
 
             IF ( t >= Q_mnp_start ) THEN
                 ! integrating E_mnp*dp/dt
@@ -206,12 +206,12 @@ SUBROUTINE rk_de(t_in, rho_in, rho_out, s_in, s_out)
         ENDDO
 
         E_mnp = efield(field,t_in) + s_alpha*P_sqd/eps_eff2/dist**3
-        E_sqd = efield(field,t_in) + s_alpha*P_mnp/eps_eff1/dist**3
+        E_sqd = efield(field,t_in)/eps_eff1 + s_alpha*P_mnp/eps_eff1/dist**3
 
         s_out = -(gamma_g + ci*omega_g)*s_in + ci*E_mnp
         s_out = s_out*rk_step
 
-        ext_field = E_sqd/eps_eff1
+        ext_field = E_sqd
     ELSE
         ext_field = efield(field, t_in)
     ENDIF

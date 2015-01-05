@@ -723,7 +723,7 @@ SUBROUTINE print_field_params
 
     ! Writing parameters to file
     fid = 11 + proc_id
-    OPEN(fid, FILE=params_file, STATUS='REPLACE')
+    OPEN(fid, FILE=out_file, STATUS='OLD', POSITION='APPEND', ACTION='WRITE')
 
         CALL print_title('Field Properties', fid)
         WRITE(fid,*)

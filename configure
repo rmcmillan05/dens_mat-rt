@@ -2,10 +2,11 @@
 
 FILE='Makefile'
 
-COMP='gfortran'
+COMP='mpif90'
 GNU_FFLAGS=' -O3 -Wall -Wextra -Wconversion -pedantic'
 INTEL_FFLAGS=' -O3'
 LIBS='-llapack -lblas'
+MPI_LIBS='-lmkl_core -lmkl_sequential -lmkl_intel_lp64'
 
 # PASSED OPTIONS
 VERB='@'
@@ -31,9 +32,9 @@ To modify options, export variables:
 
     INPATH  = [] (where executables are installed)
     F90     = [gfortran]
-    FFLAGS  = [-O3 -fopenmp -Wall -Wextra -Wconversion -pedantic] (for gfortran)
-            = [-O3 -fopenmp] (for ifort)
-    LIB     = [] (paths for external libraries: lapack and blas are required)
+    FFLAGS  = [-O3 -Wall -Wextra -Wconversion -pedantic] (for gfortran)
+            = [-O3 ] (for ifort, mpif90)
+    LIBS    = [] (paths pointing to external libraries: lapack and blas are required)
     PROGDIR = [./progs] (where main programs to compile are located)
     SRCDIR  = [./src]   (where source/module files are located)
     BINDIR  = [./bin/\$F90]   (where executables will be stored)
@@ -99,11 +100,11 @@ if [ "$F90" == "gfortran" ]; then
 elif [ "$F90" == "ifort" ]; then
     : ${FFLAGS:=$INTEL_FFLAGS}
     LFLAG='-module'
+elif [ "$F90" == "mpif90" ]; then
+    : ${FFLAGS:=$INTEL_FFLAGS}
+    LFLAG='-module'
+    LIBS=$MPI_LIBS
 fi
-
-###################
-##################
-F90='mpif90'
 
 echo '# MAIN PROGRAMS TO COMPILE' >> $FILE
 EXEC=()

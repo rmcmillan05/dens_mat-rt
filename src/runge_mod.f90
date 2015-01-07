@@ -143,8 +143,8 @@ SUBROUTINE runge
             P_mnp = 0.0_DP
             dpdt_mnp = 0.0_DP
             DO j=1,nk
-                P_mnp = P_mnp + rad**3*theta(j)*2.0_DP*REAL(s(j))
-                dpdt_mnp = dpdt_mnp + rad**3*2.0_DP*theta(j)*( omega_g(j)*AIMAG(s(j)) - &
+                P_mnp = P_mnp + eps_0*rad**3*theta(j)*2.0_DP*REAL(s(j))
+                dpdt_mnp = dpdt_mnp + eps_0*rad**3*2.0_DP*theta(j)*( omega_g(j)*AIMAG(s(j)) - &
                                                   gamma_g(j)*REAL(s(j)) )
             ENDDO
 
@@ -202,7 +202,7 @@ SUBROUTINE rk_de(t_in, rho_in, rho_out, s_in, s_out)
         P_sqd = REAL(trace(MATMUL(rho_in,mu)))
         P_mnp = 0.0_DP
         DO n=1,nk
-            P_mnp = P_mnp + rad**3*theta(n)*2.0_DP*REAL(s_in(n))
+            P_mnp = P_mnp + eps_0*rad**3*theta(n)*2.0_DP*REAL(s_in(n))
         ENDDO
 
         E_mnp = efield(field,t_in) + s_alpha*P_sqd/eps_eff2/dist**3

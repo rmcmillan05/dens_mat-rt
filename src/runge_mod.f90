@@ -3,7 +3,7 @@ MODULE runge_mod
     USE params , ONLY : rk_step, nk
     USE params , ONLY : en, gma, field, mu, num_lev, rho_eq
     USE params , ONLY : gamma_g, omega_g, coupled, &
-                        rad, theta, s_alpha, eps_eff2, nk, dist, eps_eff1
+                        rad, theta, s_alpha, eps_eff2, nk, dist, eps_eff1, eps_0
     IMPLICIT NONE
 
     PRIVATE
@@ -183,7 +183,6 @@ END SUBROUTINE runge
 SUBROUTINE rk_de(t_in, rho_in, rho_out, s_in, s_out)
     USE double
     USE global_params , ONLY : ci
-    USE params , ONLY : eps_eff1
     USE fields , ONLY : efield
     IMPLICIT NONE
 

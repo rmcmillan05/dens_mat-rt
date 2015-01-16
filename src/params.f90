@@ -116,15 +116,21 @@ SUBROUTINE get_params
 
     omega_from = omega_from/au_to_ev
     omega_to   = omega_to/au_to_ev
-    omega_g    = omega_g/au_to_ev
-    gamma_g    = gamma_g/au_to_ev
-    theta      = gamma_g*theta
+
+    IF ( coupled ) THEN
+        omega_g    = omega_g/au_to_ev
+        gamma_g    = gamma_g/au_to_ev
+        theta      = gamma_g*theta
+    ENDIF
+
     E0         = SQRT(I0 / intens_par)
 
-    dist     = dist/length_par
-    rad      = rad/length_par
-    eps_eff1 = (2.0_DP*eps_0 + eps_s)/(3.0_DP*eps_0)
-    eps_eff2 = (2.0_DP*eps_0 + eps_s)/3.0_DP
+    IF ( coupled ) THEN
+        dist     = dist/length_par
+        rad      = rad/length_par
+        eps_eff1 = (2.0_DP*eps_0 + eps_s)/(3.0_DP*eps_0)
+        eps_eff2 = (2.0_DP*eps_0 + eps_s)/3.0_DP
+    ENDIF
 
     npts_per_proc = omega_npts/nprocs
     remainder     = MOD(omega_npts, nprocs)

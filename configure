@@ -76,7 +76,11 @@ fi
 : ${F90:=$COMP}
 : ${LIB:=''}
 
-BINDIR=${BINDIR}/${F90}
+if [[ "${SUFFIX}" != "" ]]; then
+    SUFFIX=-$SUFFIX
+fi
+
+BINDIR=${BINDIR}/${F90}${SUFFIX}
 
 shopt -s extglob
 PROGDIR_=${PROGDIR%%+(/)}
@@ -202,4 +206,4 @@ echo -e "\t@if [[ '\$(INPATH)' != '' ]]; then if [ ! -e \$(INPATH) ]; then mkdir
 echo >> $FILE
 echo '# CLEANING UP' >> $FILE
 echo 'clean:' >> $FILE
-echo -e '\t rm -fr *.mod $(MODDIR) $(BINDIR) $(SRCDIR)/*.o $(PROGDIR)/*.o' >> $FILE
+echo -e '\t rm -fr *.o *.mod $(MODDIR) $(SRCDIR)/*.o $(PROGDIR)/*.o' >> $FILE

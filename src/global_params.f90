@@ -18,7 +18,7 @@ MODULE global_params
     INTEGER, PARAMETER          :: std_out = 6
     INTEGER, PARAMETER          :: full_wd=80
     CHARACTER(LEN=5), PARAMETER :: char_fmt = '(A80)'
-    CHARACTER(LEN=64)           :: real_fmt = '(ES22.14)'
+    CHARACTER(LEN=64)           :: real_fmt = '(ES22.13E3)'
     CHARACTER(LEN=full_wd)      :: tmp_msg
     
 END MODULE global_params

@@ -189,6 +189,7 @@ SUBROUTINE write_log
         CALL print_str_num_real('Total Propagation Time (a.u)', trange, fh_log)
         WRITE(fh_log, *)
 
+    IF ( coupled ) THEN
     CALL print_title('SQD-MNP Properties', fh_log)
         DO i = 1,nk
             WRITE(istr,'(I3)') i
@@ -202,6 +203,7 @@ SUBROUTINE write_log
         CALL print_str_num_real('eps_eff1', eps_eff1, fh_log)
         CALL print_str_num_real('eps_eff2', eps_eff2, fh_log)
         WRITE(fh_log, *)
+    ENDIF
 
     CALL print_title('Input System Variables', fh_log)
         CALL print_str('Energy Levels:', fh_log)

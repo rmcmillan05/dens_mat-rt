@@ -4,10 +4,11 @@ MODULE params
     
     ! Input field
     CHARACTER(LEN=256) :: field
-    REAL(KIND=DP)      :: omega_from
-    REAL(KIND=DP)      :: omega_to
-    INTEGER            :: omega_npts
-    REAL(KIND=DP)      :: omega_step
+    CHARACTER(LEN=256) :: field_change_param
+    REAL(KIND=DP)      :: field_param_from
+    REAL(KIND=DP)      :: field_param_to
+    INTEGER            :: field_param_npts
+    REAL(KIND=DP)      :: field_param_step
     REAL(KIND=DP)      :: omega
     REAL(KIND=DP)      :: I0
     REAL(KIND=DP)      :: E0
@@ -114,30 +115,37 @@ SUBROUTINE get_params
 
     en = en/au_to_ev
 
-    omega_from = omega_from/au_to_ev
-    omega_to   = omega_to/au_to_ev
-
     IF ( coupled ) THEN
         omega_g    = omega_g/au_to_ev
         gamma_g    = gamma_g/au_to_ev
         theta      = gamma_g*theta
     ENDIF
 
+    omega      = omega/au_to_ev
     E0         = SQRT(I0 / intens_par)
 
     IF ( coupled ) THEN
         dist     = dist/length_par
         rad      = rad/length_par
-        eps_eff1 = (2.0_DP*eps_0 + eps_s)/(3.0_DP*eps_0)
         eps_eff2 = (2.0_DP*eps_0 + eps_s)/3.0_DP
     ENDIF
+        eps_eff1 = (2.0_DP*eps_0 + eps_s)/(3.0_DP*eps_0)
 
-    npts_per_proc = omega_npts/nprocs
-    remainder     = MOD(omega_npts, nprocs)
-    IF ( omega_npts == 1 ) THEN
-        omega_step = 0.0_DP
+    IF ( field_change_param == 'omega' ) THEN
+        field_param_from = field_param_from/au_to_ev
+        field_param_to   = field_param_to/au_to_ev
+    ENDIF
+
+    IF ( field_param_npts < 1 ) THEN
+        field_param_npts = 1
+    ENDIF
+
+    npts_per_proc = field_param_npts/nprocs
+    remainder     = MOD(field_param_npts, nprocs)
+    IF ( field_param_npts == 1 ) THEN
+        field_param_step = 0.0_DP
     ELSE
-        omega_step = (omega_to - omega_from)/REAL(omega_npts-1)
+        field_param_step = (field_param_to - field_param_from)/REAL(field_param_npts-1)
     ENDIF
 
     npts        = NINT(trange/rk_step)
@@ -370,6 +378,8 @@ SUBROUTINE read_in_file_rho
     Q_sqd_start    = 0.0_DP
     Q_mnp_start    = 0.0_DP
 
+    field_param_npts = -1
+
     dist = 20.0_DP
     rad = 7.5_DP
     s_alpha = 2.0_DP
@@ -425,14 +435,20 @@ SUBROUTINE read_in_file_rho
             CASE ('dist')
                 READ(buffer, *, IOSTAT=ios) dist
 
-            CASE ('omega_from')
-                READ(buffer, *, IOSTAT=ios) omega_from
+            CASE ('field_change_param')
+                READ(buffer, *, IOSTAT=ios) field_change_param
 
-            CASE ('omega_to')
-                READ(buffer, *, IOSTAT=ios) omega_to
+            CASE ('field_param_from')
+                READ(buffer, *, IOSTAT=ios) field_param_from
 
-            CASE ('omega_npts')
-                READ(buffer, *, IOSTAT=ios) omega_npts
+            CASE ('field_param_to')
+                READ(buffer, *, IOSTAT=ios) field_param_to
+
+            CASE ('field_param_npts')
+                READ(buffer, *, IOSTAT=ios) field_param_npts
+
+            CASE ('omega')
+                READ(buffer, *, IOSTAT=ios) omega
 
             CASE ('I0')
                 READ(buffer, *, IOSTAT=ios) I0

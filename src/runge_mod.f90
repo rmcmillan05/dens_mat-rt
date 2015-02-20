@@ -17,7 +17,7 @@ SUBROUTINE runge
     USE params , ONLY : npts, rk_step, positions, rho_0,  &
                         out_file, npos, trange, &
                         omega, Q_sqd_start, Q_mnp_start, &
-                        check_pt, proc_id, field_width
+                        check_pt, proc_id, field_width, Q_sqd_end
     USE fields
     USE global_params , ONLY : std_out, power_par, au_to_ev, real_fmt
     USE print_mod
@@ -45,7 +45,6 @@ SUBROUTINE runge
     REAL(KIND=DP)  :: dpdt_mnp
     REAL(KIND=DP)  :: P_sqd_old
 !    REAL(KIND=DP)  :: E_mnp
-!    REAL(KIND=DP)  :: E_sqd
     !
     ! Title for rho element column
     CHARACTER(LEN=2)                              :: poschar
@@ -70,7 +69,7 @@ SUBROUTINE runge
         s = 0.0_DP
         Q_mnp = 0.0_DP
         Q_sqd = 0.0_DP
-        E_sqd = efield(field, t)
+        E_sqd = efield(field, t)/eps_eff1
         E_mnp = efield(field, t)
         P_sqd = 0.0_DP
         P_mnp = 0.0_DP
@@ -158,7 +157,7 @@ SUBROUTINE runge
 
         ENDIF
 
-        IF ( t >= Q_sqd_start ) THEN
+        IF ( t >= Q_sqd_start .AND. t <= Q_sqd_end) THEN
             ! integrating rho(2,2)
             Q_sqd = Q_sqd + REAL(rho(2,2))
         ENDIF
@@ -167,18 +166,24 @@ SUBROUTINE runge
 
     CALL print_param_change
 
-!    Q_sqd = Q_sqd*rk_step/(trange-Q_sqd_start)
-    Q_sqd = power_par*(en(2)-en(1))*gma(1,1)*Q_sqd*rk_step/(trange-Q_sqd_start)
-    WRITE(std_out,real_fmt) Q_sqd
 
     IF ( coupled ) THEN
 
-!            Q_mnp = Q_mnp*rk_step/(trange-Q_mnp_start)
-            Q_mnp = power_par*Q_mnp*rk_step/(trange-Q_mnp_start)
-            Q = Q_mnp + Q_sqd
+        Q_sqd = Q_sqd*rk_step/(Q_sqd_end-Q_sqd_start)
+!        Q_sqd = power_par*(en(2)-en(1))*gma(1,1)*Q_sqd*rk_step/(Q_sqd_end-Q_sqd_start)
+        Q_mnp = power_par*Q_mnp*rk_step/(trange-Q_mnp_start)
+        Q = Q_mnp + Q_sqd
 
-            WRITE(std_out,real_fmt, ADVANCE='NO') Q_mnp
-            WRITE(std_out,real_fmt) Q
+        WRITE(std_out,real_fmt, ADVANCE='NO') Q_sqd
+        WRITE(std_out,real_fmt, ADVANCE='NO') Q_mnp
+        WRITE(std_out,real_fmt) Q
+
+    ELSE
+
+        Q_sqd = Q_sqd*rk_step/(Q_sqd_end-Q_sqd_start)
+
+        WRITE(std_out,real_fmt, ADVANCE='NO') Q_sqd
+        WRITE(std_out, *)
 
     ENDIF
 
@@ -187,15 +192,21 @@ SUBROUTINE runge
 END SUBROUTINE runge
 
 SUBROUTINE print_param_change
-    USE params , ONLY : field_change_param, field_width, field_height, omega
+    USE params , ONLY : field_change_param, field_width, field_height, & 
+                        omega, pulse_area
     USE global_params , ONLY : std_out, real_fmt, au_to_ev
 
     IMPLICIT NONE
+    
+!    pulse_area = REAL(mu(1,2), KIND=DP)*1.064467019431226_DP*field_height*field_width
 
     SELECTCASE ( field_change_param )
 
         CASE( 'field_height' )
             WRITE(std_out,real_fmt, ADVANCE='NO') field_height
+
+        CASE( 'pulse_area' )
+            WRITE(std_out,real_fmt, ADVANCE='NO') pulse_area
 
         CASE ( 'field_width' )
             WRITE(std_out,real_fmt, ADVANCE='NO') field_width
@@ -239,7 +250,7 @@ SUBROUTINE rk_de(t_in, rho_in, rho_out, s_in, s_out)
 
         ext_field = E_sqd
     ELSE
-        ext_field = efield(field, t_in)/eps_eff1
+        ext_field = efield(field, t_in)
     ENDIF
 
     comm = commute(mu, rho_in)

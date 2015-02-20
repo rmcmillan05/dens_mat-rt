@@ -46,15 +46,29 @@ END FUNCTION step
 
 FUNCTION gauss(t)
     USE double
-    USE params, ONLY : field_height, field_centre, field_width
+    USE params, ONLY : field_width, field_centre, pulse_area, mu
+    USE global_params , ONLY : pi
     IMPLICIT NONE
 
     REAL(KIND=DP), INTENT(IN) :: t
     REAL(KIND=DP)             :: gauss
 
-    gauss = field_height * EXP(-2.772589_DP*(t-field_centre)**2/field_width**2)
+    gauss = 0.939437278699651_DP*pulse_area/REAL(mu(1,2),KIND=DP)/field_width *&
+            EXP(-2.772588722239781_DP*((t-field_centre)/field_width)**2)
 
 END FUNCTION gauss
+
+FUNCTION gauss_pulse(t)
+    USE double
+    USE params, ONLY : omega
+    IMPLICIT NONE
+
+    REAL(KIND=DP), INTENT(IN) :: t
+    REAL(KIND=DP)             :: gauss_pulse
+
+    gauss_pulse = SIN(omega*t)*gauss(t)
+
+END FUNCTION gauss_pulse
 
 
 FUNCTION pulse(t_in)
@@ -127,6 +141,8 @@ FUNCTION efield(field, t)
             efield = 0.0_DP * t
         CASE ('gauss')
             efield = gauss(t)
+        CASE ('gauss_pulse')
+            efield = gauss_pulse(t)
         CASE DEFAULT
             CALL print_str("Error: field '"//TRIM(field)//                     &
                            "' not recognized.  Exiting...")

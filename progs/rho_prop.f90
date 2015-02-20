@@ -70,7 +70,7 @@ SUBROUTINE change_parameter(i, suffix_int)
     USE mpi
     USE communications
     USE params , ONLY : field_change_param, field_height, field_width, &
-                        field_param_step, field_param_from, omega
+                        field_param_step, field_param_from, omega, pulse_area
     IMPLICIT NONE
 
     INTEGER, INTENT(IN) :: i
@@ -86,6 +86,8 @@ SUBROUTINE change_parameter(i, suffix_int)
     ENDIF
 
     SELECTCASE ( field_change_param )
+        CASE ( 'pulse_area' )
+            pulse_area  = out_val
         CASE ( 'field_height' )
             field_height  = out_val
         CASE ( 'field_width' )

@@ -35,6 +35,7 @@ MODULE params
     REAL(KIND=DP)      :: field_height
     REAL(KIND=DP)      :: field_centre
     REAL(KIND=DP)      :: field_width
+    REAL(KIND=DP)      :: pulse_area
     !
     ! Pulse field parameters
     ! 
@@ -46,6 +47,7 @@ MODULE params
     !
     REAL(KIND=DP) :: trange
     REAL(KIND=DP) :: Q_sqd_start
+    REAL(KIND=DP) :: Q_sqd_end
     REAL(KIND=DP) :: Q_mnp_start
     REAL(KIND=DP) :: rk_step
     INTEGER       :: npts
@@ -102,7 +104,7 @@ CONTAINS
 
 SUBROUTINE get_params
     USE double
-    USE global_params , ONLY : intens_par, length_par, au_to_ev, std_err
+    USE global_params , ONLY : intens_par, length_par, au_to_ev, std_err, pi
     USE print_mod
     IMPLICIT NONE
 
@@ -112,6 +114,10 @@ SUBROUTINE get_params
         CALL EXIT(0)
     ENDIF
     CALL read_matrices
+
+    IF ( Q_sqd_end == 0.0_DP ) THEN
+        Q_sqd_end = trange
+    ENDIF
 
     en = en/au_to_ev
 
@@ -138,6 +144,12 @@ SUBROUTINE get_params
 
     IF ( field_param_npts < 1 ) THEN
         field_param_npts = 1
+    ENDIF
+
+    pulse_area = pulse_area * pi
+    IF ( field_change_param == 'pulse_area' ) THEN
+        field_param_from = field_param_from*pi
+        field_param_to   = field_param_to*pi
     ENDIF
 
     npts_per_proc = field_param_npts/nprocs
@@ -363,12 +375,13 @@ SUBROUTINE read_in_file_rho
     ! SET DEFAULTS
     I0           = 1.0_DP
     field        = 'cosfield'
-    trange    = 1200.0_DP
+    trange    = 0.0_DP
     coupled = .FALSE.
     out_pts      = -1.0_DP
     in_folder    = '-#error'
     jname        = 'job'
     out_folder   = '.'
+    pulse_area  = 0.0_DP
     field_centre  = 50.0_DP
     field_width   = 20.0_DP
     field_height  = 1.0E-8_DP
@@ -376,6 +389,7 @@ SUBROUTINE read_in_file_rho
     pulse_start  = 0.0_DP
     pulse_cycles = 6.0_DP
     Q_sqd_start    = 0.0_DP
+    Q_sqd_end    = 0.0_DP
     Q_mnp_start    = 0.0_DP
 
     field_param_npts = -1
@@ -463,6 +477,9 @@ SUBROUTINE read_in_file_rho
             CASE ('coupled')
                 READ(buffer, *, IOSTAT=ios) coupled
 
+            CASE ('Q_sqd_end')
+                READ(buffer, *, IOSTAT=ios) Q_sqd_end
+
             CASE ('Q_sqd_start')
                 READ(buffer, *, IOSTAT=ios) Q_sqd_start
 
@@ -484,6 +501,9 @@ SUBROUTINE read_in_file_rho
 
             CASE ('name')
                 READ(buffer, *, IOSTAT=ios) jname
+
+            CASE ('pulse_area')
+                READ(buffer, *, IOSTAT=ios) pulse_area
 
             CASE ('field_height')
                 READ(buffer, *, IOSTAT=ios) field_height
@@ -739,7 +759,7 @@ END SUBROUTINE check_file
 SUBROUTINE print_field_params
     USE double
     USE print_mod
-    USE global_params , ONLY : au_to_ev
+    USE global_params , ONLY : au_to_ev, pi
     IMPLICIT NONE
     
     ! File handle
@@ -755,8 +775,16 @@ SUBROUTINE print_field_params
 
         SELECTCASE ( field )
 
+        CASE ( 'gauss_pulse' )
+            CALL print_str_num_real('> Pulse Area', pulse_area, fid)
+            CALL print_str_num_real('> Height', 0.939437278699651_DP*pulse_area/REAL(mu(1,2),KIND=DP)/field_width, fid)
+            CALL print_str_num_real('> Full Width at Half Maximum', field_width, fid)
+            CALL print_str_num_real('> Centre', field_centre, fid)
+            CALL print_str_num_real('> Omega (eV)', omega*au_to_ev, fid)
+
         CASE ( 'gauss' )
-            CALL print_str_num_real('> Height', field_height, fid)
+            CALL print_str_num_real('> Pulse Area', pulse_area, fid)
+            CALL print_str_num_real('> Height', 0.939437278699651_DP*pulse_area/REAL(mu(1,2),KIND=DP)/field_width, fid)
             CALL print_str_num_real('> Full Width at Half Maximum', field_width, fid)
             CALL print_str_num_real('> Centre', field_centre, fid)
 

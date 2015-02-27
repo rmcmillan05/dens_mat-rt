@@ -2,6 +2,7 @@
 ## by "read_col" [default read_col=2]
 in_file  './out/test.out'
 read_col  3
+read_first_npts  1000
 ## Output folder in which the output files will placed [default out_folder='./']
 out_folder './out/'
 ## Prefix name given to the job [default name='job']

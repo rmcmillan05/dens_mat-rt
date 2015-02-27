@@ -3,10 +3,10 @@ PROGRAM post_proc
     USE print_mod
     USE num_lines , ONLY : numlines
     USE freq_analysis , ONLY : get_freq_amp, find_closest, remove_duplicates
-    USE global_params , ONLY : std_out, energy_par, wave_par
+    USE global_params , ONLY : std_out, energy_par, wave_par, real_fmt
     USE params , ONLY : get_params_pp, freqs_in, field_in_file,      &
                                   probe_freq, field_out_file, freqs_out_file,  &
-                                  read_col, in_file
+                                  read_col, in_file, read_first_npts
     IMPLICIT NONE
 
     REAL(KIND=DP), ALLOCATABLE :: field(:)
@@ -38,7 +38,8 @@ PROGRAM post_proc
 
     CALL get_params_pp
 
-    nt = numlines(field_in_file)-1
+!    nt = numlines(field_in_file)-1
+    nt = read_first_npts
 
     ALLOCATE( t(nt) )
     ALLOCATE( field(nt) )
@@ -47,13 +48,13 @@ PROGRAM post_proc
     OPEN(UNIT=10, FILE=field_in_file, STATUS='OLD', ACTION='READ')
         READ(10, *)
         DO i = 1, nt
-! WARNING: INPUT TABLE *MUST* BE FORMATTED IN ES22.14 FMT
-            READ(10, '(ES22.14)', ADVANCE='NO') t(i)
+! WARNING: INPUT TABLE *MUST* BE FORMATTED IN real_fmt (see global_params)
+            READ(10, real_fmt, ADVANCE='NO') t(i)
             DO j = 2,read_col
                 IF ( j == read_col ) THEN
-                    READ(10, *) field(i)
+                    READ(10, real_fmt) field(i)
                 ELSE
-                    READ(10, '(ES22.14)', ADVANCE='NO') tmp
+                    READ(10, real_fmt, ADVANCE='NO') tmp
                 ENDIF
             ENDDO
         ENDDO

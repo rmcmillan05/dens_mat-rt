@@ -88,6 +88,7 @@ MODULE params
     
     ! Post-Proc Params
     INTEGER                    :: num_freqs
+    INTEGER                    :: read_first_npts
     REAL(KIND=DP), ALLOCATABLE :: freqs_in(:)
     REAL(KIND=DP)              :: start_from
     REAL(KIND=DP)              :: go_to
@@ -565,6 +566,7 @@ SUBROUTINE get_params_pp
     jname = 'job'
     num_freqs = -1
     read_col = 2
+    read_first_npts = 500
 
     ! SETTING PARAMETERS
     
@@ -617,6 +619,10 @@ SUBROUTINE get_params_pp
             buffer = buffer(pos+1:)
 
             SELECT CASE (label)
+
+            CASE ('read_first_npts')
+                READ(buffer, *, IOSTAT=ios) read_first_npts
+                CALL param_read_success('read_first_npts',logid)
 
             CASE ('read_col')
                 READ(buffer, *, IOSTAT=ios) read_col

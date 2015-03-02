@@ -36,11 +36,7 @@ rad      7.5
 s_alpha  2.0
 eps_0    1.0
 eps_s    6.0
-
-n_k     2
-omega_k 2.44 6.5
-gamma_k 0.21 0.92
-m_k     0.776 4.005
+mnp_chi_in_file   './DATA/Au_MNP_chi.in'
 
 Q_sqd_start   119000000
 Q_mnp_start   100000000

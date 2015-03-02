@@ -25,6 +25,7 @@ MODULE params
     REAL(KIND=DP) :: eps_eff1
     REAL(KIND=DP) :: eps_eff2
 
+    CHARACTER(LEN=256)         :: mnp_chi_in_file
     INTEGER                    :: nk
     REAL(KIND=DP), ALLOCATABLE :: theta(:)
     REAL(KIND=DP), ALLOCATABLE :: omega_g(:)
@@ -115,6 +116,7 @@ SUBROUTINE get_params
         CALL EXIT(0)
     ENDIF
     CALL read_matrices
+    CALL read_chi_in_file
 
     IF ( Q_sqd_end == 0.0_DP ) THEN
         Q_sqd_end = trange
@@ -125,7 +127,7 @@ SUBROUTINE get_params
     IF ( coupled ) THEN
         omega_g    = omega_g/au_to_ev
         gamma_g    = gamma_g/au_to_ev
-        theta      = gamma_g*theta
+        theta      = theta/au_to_ev
     ENDIF
 
     omega      = omega/au_to_ev
@@ -275,6 +277,31 @@ SUBROUTINE write_log
 
 END SUBROUTINE write_log
 
+SUBROUTINE read_chi_in_file
+    USE double
+    IMPLICIT NONE
+    INTEGER :: i
+
+    OPEN(UNIT=10, FILE=mnp_chi_in_file, STATUS='OLD', ACTION='READ')
+        READ(10, *)
+        READ(10, *) nk
+            ALLOCATE(theta(nk))
+            ALLOCATE(gamma_g(nk))
+            ALLOCATE(omega_g(nk))
+        READ(10, *) 
+        READ(10, *) 
+        READ(10, *) (omega_g(i) , i = 1,nk)
+        READ(10, *) 
+        READ(10, *) 
+        READ(10, *) (gamma_g(i) , i = 1,nk)
+        READ(10, *) 
+        READ(10, *) 
+        READ(10, *) (theta(i) , i = 1,nk)
+    CLOSE(10)
+
+END SUBROUTINE read_chi_in_file
+
+
 SUBROUTINE read_matrices
     USE double
     USE num_lines , ONLY : numlines
@@ -420,20 +447,8 @@ SUBROUTINE read_in_file_rho
 
             SELECTCASE (label)
 
-            CASE ('n_k')
-                READ(buffer, *, IOSTAT=ios) nk
-                ALLOCATE(theta(nk))
-                ALLOCATE(gamma_g(nk))
-                ALLOCATE(omega_g(nk))
-
-            CASE ('gamma_k')
-                READ(buffer, *, IOSTAT=ios) gamma_g
-
-            CASE ('omega_k')
-                READ(buffer, *, IOSTAT=ios) omega_g
-
-            CASE ('m_k')
-                READ(buffer, *, IOSTAT=ios) theta
+            CASE ('mnp_chi_in_file')
+                READ(buffer, *, IOSTAT=ios) mnp_chi_in_file
 
             CASE ('eps_0')
                 READ(buffer, *, IOSTAT=ios) eps_0

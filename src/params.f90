@@ -226,9 +226,10 @@ SUBROUTINE write_log
             CALL print_str_num_real('omega_g_'//ADJUSTL(istr)//' (a.u.)', omega_g(i), fh_log)
             CALL print_str_num_real('gamma_g_'//ADJUSTL(istr)//' (a.u.)', gamma_g(i), fh_log)
         ENDDO
-        CALL print_str_num_real('Separation (nm)', dist*length_par, fh_log)
-        CALL print_str_num_real('MNP Diameter (nm)', rad*length_par, fh_log)
+        CALL print_str_num_real('Separation (a.u.)', dist, fh_log)
+        CALL print_str_num_real('MNP Diameter (a.u.)', rad, fh_log)
         CALL print_str_num_real('s_alpha', s_alpha, fh_log)
+        CALL print_str_num_real('eps_0', eps_0, fh_log)
         CALL print_str_num_real('eps_eff1', eps_eff1, fh_log)
         CALL print_str_num_real('eps_eff2', eps_eff2, fh_log)
         WRITE(fh_log, *)

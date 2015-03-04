@@ -169,8 +169,7 @@ SUBROUTINE runge
 
     IF ( coupled ) THEN
 
-        Q_sqd = Q_sqd*rk_step/(Q_sqd_end-Q_sqd_start)
-!        Q_sqd = power_par*(en(2)-en(1))*gma(1,1)*Q_sqd*rk_step/(Q_sqd_end-Q_sqd_start)
+        Q_sqd = power_par*(en(2)-en(1))*gma(1,1)*Q_sqd*rk_step/(Q_sqd_end-Q_sqd_start)
         Q_mnp = power_par*Q_mnp*rk_step/(trange-Q_mnp_start)
         Q = Q_mnp + Q_sqd
 

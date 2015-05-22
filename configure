@@ -91,6 +91,10 @@ BINDIR_=${BINDIR%%+(/)}
 LRPROG=${BINDIR_}/lin_resp.exe
 LRSRC=${SRCDIR_}/non-fortran/lin_resp.sh
 
+# FFT python script
+FFTPROG=${BINDIR_}/fft.exe
+FFTSRC=${SRCDIR_}/non-fortran/fft.py
+
 rm -rf $SRCDIR_/*.o $PROGDIR_/*.o
 
 if [ "$LIB" == "" ]; then
@@ -159,7 +163,7 @@ echo 'SRCOBJ = $(wildcard $(SRCDIR)/*f90)' >> $FILE
 echo 'MODOBJ = $(SRCOBJ:.f90=.o)' >> $FILE
 echo >> $FILE
 
-echo 'all: '${PNAME[*]} $LRPROG install >> $FILE
+echo 'all: '${PNAME[*]} $LRPROG $FFTPROG install >> $FILE
 echo >> $FILE
 
 echo '# MODULE DEPENDENCIES' >> $FILE
@@ -189,6 +193,15 @@ echo '# LINKING lin_resp' >> $FILE
     fi
         #    echo -e "\t@sed \"s/F90/$F90/\" $LRSRC > $LRPROG" >> $FILE
     echo -e "\t@chmod u+x $LRPROG" >> $FILE
+    echo -e "\t@echo '----------------------'" >> $FILE
+    echo >> $FILE
+
+echo '# LINKING fft' >> $FILE
+    echo "${FFTPROG}: ${FFTSRC}" >> $FILE
+    echo -e "\t@echo '----------------------'" >> $FILE
+    echo -e "\t@echo 'Linking fft'" >> $FILE
+    echo -e "\t@cp $FFTSRC $FFTPROG" >> $FILE
+    echo -e "\t@chmod u+x $FFTPROG" >> $FILE
     echo -e "\t@echo '----------------------'" >> $FILE
     echo >> $FILE
 

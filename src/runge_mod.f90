@@ -3,7 +3,7 @@ MODULE runge_mod
     USE params , ONLY : rk_step, nk
     USE params , ONLY : en, gma, field, mu, num_lev, rho_eq
     USE params , ONLY : gamma_g, omega_g, coupled, &
-                        rad, theta, s_alpha, eps_eff2, nk, dist, eps_eff1, eps_0
+                        theta, s_alpha, eps_eff2, nk, dist, eps_eff1, eps_0
     IMPLICIT NONE
 
     PRIVATE
@@ -43,7 +43,6 @@ SUBROUTINE runge
     REAL(KIND=DP)  :: Q_sqd
     REAL(KIND=DP)  :: Q
     REAL(KIND=DP)  :: dpdt_mnp
-    REAL(KIND=DP)  :: P_sqd_old
 !    REAL(KIND=DP)  :: E_mnp
     !
     ! Title for rho element column
@@ -64,15 +63,17 @@ SUBROUTINE runge
     ! Initializing
     rho    = rho_0
     t      = 0.0_DP
+    P_sqd = 0.0_DP
 
     IF ( coupled ) THEN
         s = 0.0_DP
         Q_mnp = 0.0_DP
         Q_sqd = 0.0_DP
         E_sqd = efield(field, t)/eps_eff1
+!        E_sqd = efield(field, t)
         E_mnp = efield(field, t)
-        P_sqd = 0.0_DP
         P_mnp = 0.0_DP
+        dpdt_mnp = 0.0_DP
     ENDIF
 
 
@@ -81,9 +82,13 @@ SUBROUTINE runge
     WRITE(out_id, '(A22)', ADVANCE='NO') ' field                '
     IF ( coupled ) THEN
         WRITE(out_id, '(A22)', ADVANCE='NO') ' E_SQD                '
+!        WRITE(out_id, '(A22)', ADVANCE='NO') ' E_SQD_RWA            '
         WRITE(out_id, '(A22)', ADVANCE='NO') ' E_MNP                '
         WRITE(out_id, '(A22)', ADVANCE='NO') ' P_SQD                '
         WRITE(out_id, '(A22)', ADVANCE='NO') ' P_MNP                '
+        WRITE(out_id, '(A22)', ADVANCE='NO') ' d/dt(P_MNP)  '
+    ELSE
+        WRITE(out_id, '(A22)', ADVANCE='NO') ' P_SQD                '
     ENDIF
     DO j = 1, npos 
         WRITE(out_id, '(A5)', ADVANCE='NO') ' rho_'
@@ -91,7 +96,11 @@ SUBROUTINE runge
         WRITE(out_id, '(A3)', ADVANCE='NO') poschar//','
         WRITE(poschar, '(I2)') positions(j,2)
         WRITE(out_id, '(A2)', ADVANCE='NO') poschar
-        WRITE(out_id, '(A34)', ADVANCE='NO') ' '
+        IF ( positions(j,1) == positions(j,2) ) THEN
+            WRITE(out_id, '(A12)', ADVANCE='NO') ' '
+        ELSE
+            WRITE(out_id, '(A34)', ADVANCE='NO') ' '
+        ENDIF
     ENDDO
     WRITE(out_id,*)
 
@@ -105,18 +114,26 @@ SUBROUTINE runge
         IF ( MOD(i, check_pt) == 0 ) THEN
             !! PRINTING VALUES !!
             WRITE(out_id, real_fmt, ADVANCE='NO') t  
-            WRITE(out_id, real_fmt, ADVANCE='NO') efield(field, t)
             IF ( coupled ) THEN
+                WRITE(out_id, real_fmt, ADVANCE='NO') efield(field, t)
                 WRITE(out_id, real_fmt, ADVANCE='NO') E_sqd
+!                WRITE(out_id, real_fmt, ADVANCE='NO') e_sqd_rwa(t, REAL(mu(2,1)), rho(2,1)) 
                 WRITE(out_id, real_fmt, ADVANCE='NO') E_mnp
                 WRITE(out_id, real_fmt, ADVANCE='NO') P_sqd
                 WRITE(out_id, real_fmt, ADVANCE='NO') P_mnp
+                WRITE(out_id, real_fmt, ADVANCE='NO') dpdt_mnp
+            ELSE
+                WRITE(out_id, real_fmt, ADVANCE='NO') efield(field, t)
+!                WRITE(out_id, real_fmt, ADVANCE='NO') e_sqd_rwa(t, REAL(mu(2,1)), rho(2,1)) 
+                WRITE(out_id, real_fmt, ADVANCE='NO') P_sqd
             ENDIF
             DO j = 1, npos
                     WRITE(out_id, real_fmt, ADVANCE='NO')                         &
                     REAL(rho(positions(j,1),positions(j,2)),KIND=DP)
-                    WRITE(out_id, real_fmt, ADVANCE='NO')                         &
-                    AIMAG(rho(positions(j,1),positions(j,2)))
+                    IF (positions(j,1) /= positions(j,2)) THEN
+                        WRITE(out_id, real_fmt, ADVANCE='NO')                         &
+                        AIMAG(rho(positions(j,1),positions(j,2)))
+                    ENDIF
             ENDDO                                 
             WRITE(out_id,*)
         ENDIF
@@ -132,23 +149,23 @@ SUBROUTINE runge
 
         rho = rho + (k_rho(1,:,:) + 2.0_DP*k_rho(2,:,:) + 2.0_DP*k_rho(3,:,:) + k_rho(4,:,:))/6.0_DP
         t = t + rk_step
+        P_sqd = REAL(trace(MATMUL(rho,mu)))
 
         IF ( coupled ) THEN
             s = s + (k_s(1,:) + 2.0_DP*k_s(2,:) + 2.0_DP*k_s(3,:) + k_s(4,:))/6.0_DP
-            P_sqd_old = P_sqd
-            P_sqd = REAL(trace(MATMUL(rho,mu)))
 
             ! Calculating gold dipole
             P_mnp = 0.0_DP
             dpdt_mnp = 0.0_DP
             DO j=1,nk
-                P_mnp = P_mnp + eps_0*rad**3*theta(j)*2.0_DP*REAL(s(j))
-                dpdt_mnp = dpdt_mnp + eps_0*rad**3*2.0_DP*theta(j)*( omega_g(j)*AIMAG(s(j)) - &
+                P_mnp = P_mnp + theta(j)*2.0_DP*REAL(s(j))
+                dpdt_mnp = dpdt_mnp + 2.0_DP*theta(j)*( omega_g(j)*AIMAG(s(j)) - &
                                                   gamma_g(j)*REAL(s(j)) )
             ENDDO
 
             E_mnp = efield(field,t) + s_alpha*P_sqd/eps_eff2/dist**3
-            E_sqd = efield(field,t)/eps_eff1 + s_alpha*P_mnp/eps_eff1/dist**3
+            E_sqd = efield(field,t)/eps_eff1 + s_alpha*P_mnp/eps_eff2/dist**3
+!            E_sqd = efield(field,t) + s_alpha*P_mnp/eps_eff2/dist**3
 
             IF ( t >= Q_mnp_start ) THEN
                 ! integrating E_mnp*dp/dt
@@ -169,7 +186,8 @@ SUBROUTINE runge
 
     IF ( coupled ) THEN
 
-        Q_sqd = power_par*(en(2)-en(1))*gma(1,1)*Q_sqd*rk_step/(Q_sqd_end-Q_sqd_start)
+!        Q_sqd = power_par*(en(2)-en(1))*gma(1,1)*Q_sqd*rk_step/(Q_sqd_end-Q_sqd_start)
+        Q_sqd = Q_sqd*rk_step/(Q_sqd_end-Q_sqd_start)
         Q_mnp = power_par*Q_mnp*rk_step/(trange-Q_mnp_start)
         Q = Q_mnp + Q_sqd
 
@@ -192,7 +210,7 @@ END SUBROUTINE runge
 
 SUBROUTINE print_param_change
     USE params , ONLY : field_change_param, field_width, field_height, & 
-                        omega, pulse_area
+                        omega, pulse_area, I0
     USE global_params , ONLY : std_out, real_fmt, au_to_ev
 
     IMPLICIT NONE
@@ -213,6 +231,10 @@ SUBROUTINE print_param_change
         CASE ( 'omega' )
             WRITE(std_out,real_fmt, ADVANCE='NO') omega*au_to_ev
 
+        CASE( 'I0' )
+            WRITE(std_out,real_fmt, ADVANCE='NO') I0
+
+
     END SELECT
 
 END SUBROUTINE print_param_change
@@ -220,7 +242,7 @@ END SUBROUTINE print_param_change
 SUBROUTINE rk_de(t_in, rho_in, rho_out, s_in, s_out)
     USE double
     USE global_params , ONLY : ci
-    USE fields , ONLY : efield
+    USE fields !, ONLY : efield
     IMPLICIT NONE
 
     COMPLEX(KIND=DP), INTENT(IN) :: rho_in(:,:)
@@ -238,18 +260,21 @@ SUBROUTINE rk_de(t_in, rho_in, rho_out, s_in, s_out)
         P_sqd = REAL(trace(MATMUL(rho_in,mu)))
         P_mnp = 0.0_DP
         DO n=1,nk
-            P_mnp = P_mnp + eps_0*rad**3*theta(n)*2.0_DP*REAL(s_in(n))
+            P_mnp = P_mnp + theta(n)*2.0_DP*REAL(s_in(n))
         ENDDO
 
         E_mnp = efield(field,t_in) + s_alpha*P_sqd/eps_eff2/dist**3
-        E_sqd = efield(field,t_in)/eps_eff1 + s_alpha*P_mnp/eps_eff1/dist**3
+        E_sqd = efield(field,t_in)/eps_eff1 + s_alpha*P_mnp/eps_eff2/dist**3
+!        E_sqd = efield(field,t_in) + s_alpha*P_mnp/eps_eff2/dist**3
 
         s_out = -(gamma_g + ci*omega_g)*s_in + ci*E_mnp
         s_out = s_out*rk_step
 
         ext_field = E_sqd
     ELSE
-        ext_field = efield(field, t_in)
+!        ext_field = efield(field, t_in)
+!        ext_field = e_sqd_rwa(t_in, REAL(mu(2,1)),rho_in(2,1))
+        ext_field = e_sqd_chi_const(t_in, REAL(trace(MATMUL(rho_in,mu))))
     ENDIF
 
     comm = commute(mu, rho_in)

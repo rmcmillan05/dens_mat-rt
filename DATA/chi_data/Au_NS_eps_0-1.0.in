@@ -1,3 +1,18 @@
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+# This contains the parameters used in the approximation for the MNP chi(\omega)
+# function. The function it represents is as follows:
+# 
+# Gold nanosphere
+#       \chi(\omega) = ( \epsilon_m(\omega)  - \epsilon_0 ) /
+#                      ( 2\epsilon_m(\omega) + \epsilon_0 )
+# With \epsilon_0 = 1
+#      \epsilon_m(\omega) is taken from JCP 125, 164705 (2006)
+# 
+# We use N=12 in the approximation as fitted via MATLAB's lsqcurvefit command
+# over a range of 20eV.
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 n_k
 12
 

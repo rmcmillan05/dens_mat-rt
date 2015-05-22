@@ -9,9 +9,9 @@ MODULE params
     REAL(KIND=DP)      :: field_param_to
     INTEGER            :: field_param_npts
     REAL(KIND=DP)      :: field_param_step
-    REAL(KIND=DP)      :: omega
-    REAL(KIND=DP)      :: I0
-    REAL(KIND=DP)      :: E0
+    REAL(KIND=DP)      :: omega, omega_control
+    REAL(KIND=DP)      :: I0, I0_control
+    REAL(KIND=DP)      :: E0, E0_control
     !
     ! SQD_MNP
     !
@@ -19,9 +19,11 @@ MODULE params
     REAL(KIND=DP) :: s_alpha
     REAL(KIND=DP) :: eps_0
     REAL(KIND=DP) :: eps_s
-
+    REAL(KIND=DP) :: ratio
     REAL(KIND=DP) :: dist
+    REAL(KIND=DP) :: surf_dist
     REAL(KIND=DP) :: rad
+    REAL(KIND=DP) :: s_rad
     REAL(KIND=DP) :: eps_eff1
     REAL(KIND=DP) :: eps_eff2
 
@@ -41,6 +43,7 @@ MODULE params
     ! Pulse field parameters
     ! 
     REAL(KIND=DP)      :: pulse_start
+    REAL(KIND=DP)      :: pulse_stop
     REAL(KIND=DP)      :: pulse_phase
     REAL(KIND=DP)      :: pulse_cycles
     !
@@ -124,21 +127,35 @@ SUBROUTINE get_params
 
     en = en/au_to_ev
 
-    IF ( coupled ) THEN
-        omega_g    = omega_g/au_to_ev
-        gamma_g    = gamma_g/au_to_ev
-        theta      = theta/au_to_ev
-    ENDIF
-
-    omega      = omega/au_to_ev
-    E0         = SQRT(I0 / intens_par)
-
-    IF ( coupled ) THEN
+!    IF ( coupled ) THEN
+        IF ( dist < 0.0_DP) THEN
+            IF ( s_alpha == 2 ) THEN
+                dist = s_rad + surf_dist + ratio*rad
+            ELSE
+                dist = s_rad + surf_dist + rad
+            ENDIF
+        ENDIF
         dist     = dist/length_par
         rad      = rad/length_par
-        eps_eff2 = (2.0_DP*eps_0 + eps_s)/3.0_DP
-    ENDIF
+        s_rad      = s_rad/length_par
         eps_eff1 = (2.0_DP*eps_0 + eps_s)/(3.0_DP*eps_0)
+!        eps_eff1 = (2.0_DP*eps_0 + eps_s)/3.0_DP
+        eps_eff2 = (2.0_DP*eps_0 + eps_s)/3.0_DP
+
+        omega_g    = omega_g/au_to_ev
+        gamma_g    = gamma_g/au_to_ev
+        theta      = ratio*(rad**3)*theta/au_to_ev
+!    ELSE
+!        eps_eff1 = 1.0_DP
+!    ENDIF
+
+    IF ( pulse_stop < 0.0_DP ) THEN
+        pulse_stop = trange
+    ENDIF
+    omega      = omega/au_to_ev
+    omega_control = omega_control/au_to_ev
+    E0         = SQRT(I0 / intens_par)
+    E0_control = SQRT(I0_control / intens_par)
 
     IF ( field_change_param == 'omega' ) THEN
         field_param_from = field_param_from/au_to_ev
@@ -227,9 +244,11 @@ SUBROUTINE write_log
             CALL print_str_num_real('gamma_g_'//ADJUSTL(istr)//' (a.u.)', gamma_g(i), fh_log)
         ENDDO
         CALL print_str_num_real('Separation (a.u.)', dist, fh_log)
-        CALL print_str_num_real('MNP Diameter (a.u.)', rad, fh_log)
+        CALL print_str_num_real('MNP Radius (a.u.)', rad, fh_log)
+        CALL print_str_num_real('SQD Radius (a.u.)', s_rad, fh_log)
         CALL print_str_num_real('s_alpha', s_alpha, fh_log)
         CALL print_str_num_real('eps_0', eps_0, fh_log)
+        CALL print_str_num_real('ratio', ratio, fh_log)
         CALL print_str_num_real('eps_eff1', eps_eff1, fh_log)
         CALL print_str_num_real('eps_eff2', eps_eff2, fh_log)
         WRITE(fh_log, *)
@@ -280,11 +299,22 @@ END SUBROUTINE write_log
 
 SUBROUTINE read_chi_in_file
     USE double
+    USE print_mod , ONLY : print_str
     IMPLICIT NONE
     INTEGER :: i
+    CHARACTER(LEN=3) :: tmpstr
 
     OPEN(UNIT=10, FILE=mnp_chi_in_file, STATUS='OLD', ACTION='READ')
-        READ(10, *)
+        DO i = 1, 1000
+            READ(10, '(3A)') tmpstr
+            IF ( tmpstr == 'n_k') THEN
+                EXIT
+            ELSEIF ( i == 1000 ) THEN
+                CALL print_str('Error: Problem reading chi input file "'//mnp_chi_in_file//'". Exiting...')
+                CALL EXIT(1)
+            ENDIF
+        ENDDO
+!        READ(10, *)
         READ(10, *) nk
             ALLOCATE(theta(nk))
             ALLOCATE(gamma_g(nk))
@@ -403,6 +433,7 @@ SUBROUTINE read_in_file_rho
 
     ! SET DEFAULTS
     I0           = 1.0_DP
+    I0_control   = 1.0_DP
     field        = 'cosfield'
     trange    = 0.0_DP
     coupled = .FALSE.
@@ -416,6 +447,7 @@ SUBROUTINE read_in_file_rho
     field_height  = 1.0E-8_DP
     pulse_phase  = 0.0_DP
     pulse_start  = 0.0_DP
+    pulse_stop   = -1.0_DP
     pulse_cycles = 6.0_DP
     Q_sqd_start    = 0.0_DP
     Q_sqd_end    = 0.0_DP
@@ -423,10 +455,13 @@ SUBROUTINE read_in_file_rho
 
     field_param_npts = -1
 
-    dist = 20.0_DP
+    dist = -1.0_DP
+    surf_dist = 10.0_DP
     rad = 7.5_DP
+    s_rad = 1.0_DP
     s_alpha = 2.0_DP
     eps_0 = 1.0_DP
+    ratio = 1.0_DP
     eps_s = 6.0_DP
 
     CALL check_file(in_file)
@@ -454,11 +489,17 @@ SUBROUTINE read_in_file_rho
             CASE ('eps_0')
                 READ(buffer, *, IOSTAT=ios) eps_0
 
+            CASE ('ratio')
+                READ(buffer, *, IOSTAT=ios) ratio
+
             CASE ('eps_s')
                 READ(buffer, *, IOSTAT=ios) eps_s
 
             CASE ('s_alpha')
                 READ(buffer, *, IOSTAT=ios) s_alpha
+
+            CASE ('s_rad')
+                READ(buffer, *, IOSTAT=ios) s_rad
 
             CASE ('rad')
                 READ(buffer, *, IOSTAT=ios) rad
@@ -466,6 +507,9 @@ SUBROUTINE read_in_file_rho
             CASE ('dist')
                 READ(buffer, *, IOSTAT=ios) dist
 
+            CASE ('surf_dist')
+                READ(buffer, *, IOSTAT=ios) surf_dist
+                
             CASE ('field_change_param')
                 READ(buffer, *, IOSTAT=ios) field_change_param
 
@@ -481,8 +525,14 @@ SUBROUTINE read_in_file_rho
             CASE ('omega')
                 READ(buffer, *, IOSTAT=ios) omega
 
+            CASE ('omega_control')
+                READ(buffer, *, IOSTAT=ios) omega_control
+
             CASE ('I0')
                 READ(buffer, *, IOSTAT=ios) I0
+
+            CASE ('I0_control')
+                READ(buffer, *, IOSTAT=ios) I0_control
 
             CASE ('field')
                 READ(buffer, *, IOSTAT=ios) field
@@ -530,6 +580,9 @@ SUBROUTINE read_in_file_rho
 
             CASE ('field_width')
                 READ(buffer, *, IOSTAT=ios) field_width
+
+            CASE ('pulse_stop')
+                READ(buffer, *, IOSTAT=ios) pulse_stop
 
             CASE ('pulse_start')
                 READ(buffer, *, IOSTAT=ios) pulse_start
@@ -801,6 +854,12 @@ SUBROUTINE print_field_params
             CALL print_str_num_real('> Pulse Area', pulse_area, fid)
             CALL print_str_num_real('> Height', 0.939437278699651_DP*pulse_area/REAL(mu(1,2),KIND=DP)/field_width, fid)
             CALL print_str_num_real('> Full Width at Half Maximum', field_width, fid)
+            CALL print_str_num_real('> Centre', field_centre, fid)
+            CALL print_str_num_real('> Omega (eV)', omega*au_to_ev, fid)
+
+        CASE ( 'sech_pulse' )
+            CALL print_str_num_real('> Height', field_height, fid)
+            CALL print_str_num_real('> Width', field_width, fid)
             CALL print_str_num_real('> Centre', field_centre, fid)
             CALL print_str_num_real('> Omega (eV)', omega*au_to_ev, fid)
 

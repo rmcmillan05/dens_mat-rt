@@ -1,0 +1,9 @@
+# Input file for fft.py
+
+perform  fft # integrate / average / fft
+infile   test.out
+outfile  test.out.ft
+readcol  2
+field_col 2
+from     1900
+to       2000

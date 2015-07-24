@@ -16,7 +16,7 @@ MODULE params
     ! SQD_MNP
     !
     LOGICAL       :: coupled
-    REAL(KIND=DP) :: s_alpha
+    REAL(KIND=DP) :: s_alpha(3) = (/2.0_DP,-1.0_DP,-1.0_DP/)
     REAL(KIND=DP) :: eps_0
     REAL(KIND=DP) :: eps_s
     REAL(KIND=DP) :: ratio
@@ -27,11 +27,13 @@ MODULE params
     REAL(KIND=DP) :: eps_eff1
     REAL(KIND=DP) :: eps_eff2
 
-    CHARACTER(LEN=256)         :: mnp_chi_in_file
+    CHARACTER(LEN=256)         :: mnp_chi_in_file_x
+    CHARACTER(LEN=256)         :: mnp_chi_in_file_y
+    CHARACTER(LEN=256)         :: mnp_chi_in_file_z
     INTEGER                    :: nk
-    REAL(KIND=DP), ALLOCATABLE :: theta(:)
-    REAL(KIND=DP), ALLOCATABLE :: omega_g(:)
-    REAL(KIND=DP), ALLOCATABLE :: gamma_g(:)
+    REAL(KIND=DP), ALLOCATABLE :: theta(:,:)
+    REAL(KIND=DP), ALLOCATABLE :: omega_g(:,:)
+    REAL(KIND=DP), ALLOCATABLE :: gamma_g(:,:)
     !
     ! Step field parameters
     !
@@ -77,7 +79,7 @@ MODULE params
     INTEGER, ALLOCATABLE          :: positions(:,:)
     COMPLEX(KIND=DP), ALLOCATABLE :: rho_0(:,:)
     COMPLEX(KIND=DP), ALLOCATABLE :: rho_eq(:,:)
-    COMPLEX(KIND=DP), ALLOCATABLE :: mu(:,:)
+    REAL(KIND=DP), ALLOCATABLE :: mu(:,:,:)
 
     !
     ! MPI Params
@@ -127,13 +129,13 @@ SUBROUTINE get_params
 
 
 !    IF ( coupled ) THEN
-        IF ( dist < 0.0_DP) THEN
-            IF ( s_alpha == 2 ) THEN
-                dist = s_rad + surf_dist + ratio*rad
-            ELSE
-                dist = s_rad + surf_dist + rad
-            ENDIF
-        ENDIF
+!        IF ( dist < 0.0_DP) THEN
+!            IF ( s_alpha == 2 ) THEN
+!                dist = s_rad + surf_dist + ratio*rad
+!            ELSE
+!                dist = s_rad + surf_dist + rad
+!            ENDIF
+!        ENDIF
         en = en/au_to_ev
 
         dist     = dist/length_par
@@ -238,16 +240,16 @@ SUBROUTINE write_log
 
     IF ( coupled ) THEN
     CALL print_title('SQD-MNP Properties', fh_log)
-        DO i = 1,nk
-            WRITE(istr,'(I3)') i
-            CALL print_str_num_real('theta_g_'//ADJUSTL(istr)//' (a.u.)', theta(i), fh_log)
-            CALL print_str_num_real('omega_g_'//ADJUSTL(istr)//' (a.u.)', omega_g(i), fh_log)
-            CALL print_str_num_real('gamma_g_'//ADJUSTL(istr)//' (a.u.)', gamma_g(i), fh_log)
-        ENDDO
+!        DO i = 1,nk
+!            WRITE(istr,'(I3)') i
+!            CALL print_str_num_real('theta_g_'//ADJUSTL(istr)//' (a.u.)', theta(i), fh_log)
+!            CALL print_str_num_real('omega_g_'//ADJUSTL(istr)//' (a.u.)', omega_g(i), fh_log)
+!            CALL print_str_num_real('gamma_g_'//ADJUSTL(istr)//' (a.u.)', gamma_g(i), fh_log)
+!        ENDDO
         CALL print_str_num_real('Separation (a.u.)', dist, fh_log)
         CALL print_str_num_real('MNP Radius (a.u.)', rad, fh_log)
         CALL print_str_num_real('SQD Radius (a.u.)', s_rad, fh_log)
-        CALL print_str_num_real('s_alpha', s_alpha, fh_log)
+!        CALL print_str_num_real('s_alpha', s_alpha, fh_log)
         CALL print_str_num_real('eps_0', eps_0, fh_log)
         CALL print_str_num_real('ratio', ratio, fh_log)
         CALL print_str_num_real('eps_eff1', eps_eff1, fh_log)
@@ -266,11 +268,11 @@ SUBROUTINE write_log
         CALL print_mat_real(gma, fh_log)
         WRITE(fh_log, *)
 
-        CALL print_str('mu:', fh_log)
-        WRITE(fh_log, *)
-        CALL print_mat_complex(mu, fh_log)
-        WRITE(fh_log, *)
-
+!        CALL print_str('mu:', fh_log)
+!        WRITE(fh_log, *)
+!        CALL print_mat_complex(mu, fh_log)
+!        WRITE(fh_log, *)
+!
         CALL print_str('rho_init:', fh_log)
         WRITE(fh_log, *)
         CALL print_mat_complex(rho_0, fh_log)
@@ -305,30 +307,76 @@ SUBROUTINE read_chi_in_file
     INTEGER :: i
     CHARACTER(LEN=3) :: tmpstr
 
-    OPEN(UNIT=10, FILE=mnp_chi_in_file, STATUS='OLD', ACTION='READ')
+    OPEN(UNIT=10, FILE=mnp_chi_in_file_x, STATUS='OLD', ACTION='READ')
         DO i = 1, 1000
             READ(10, '(3A)') tmpstr
             IF ( tmpstr == 'n_k') THEN
                 EXIT
             ELSEIF ( i == 1000 ) THEN
-                CALL print_str('Error: Problem reading chi input file "'//mnp_chi_in_file//'". Exiting...')
+                CALL print_str('Error: Problem reading chi input file "'//mnp_chi_in_file_x//'". Exiting...')
                 CALL EXIT(1)
             ENDIF
         ENDDO
 !        READ(10, *)
         READ(10, *) nk
-            ALLOCATE(theta(nk))
-            ALLOCATE(gamma_g(nk))
-            ALLOCATE(omega_g(nk))
+            ALLOCATE(theta(nk,3))
+            ALLOCATE(gamma_g(nk,3))
+            ALLOCATE(omega_g(nk,3))
         READ(10, *) 
         READ(10, *) 
-        READ(10, *) (omega_g(i) , i = 1,nk)
+        READ(10, *) (omega_g(i,1) , i = 1,nk)
         READ(10, *) 
         READ(10, *) 
-        READ(10, *) (gamma_g(i) , i = 1,nk)
+        READ(10, *) (gamma_g(i,1) , i = 1,nk)
         READ(10, *) 
         READ(10, *) 
-        READ(10, *) (theta(i) , i = 1,nk)
+        READ(10, *) (theta(i,1) , i = 1,nk)
+    CLOSE(10)
+
+    OPEN(UNIT=10, FILE=mnp_chi_in_file_y, STATUS='OLD', ACTION='READ')
+        DO i = 1, 1000
+            READ(10, '(3A)') tmpstr
+            IF ( tmpstr == 'n_k') THEN
+                EXIT
+            ELSEIF ( i == 1000 ) THEN
+                CALL print_str('Error: Problem reading chi input file "'//mnp_chi_in_file_y//'". Exiting...')
+                CALL EXIT(1)
+            ENDIF
+        ENDDO
+!        READ(10, *)
+        READ(10, *) 
+        READ(10, *) 
+        READ(10, *) 
+        READ(10, *) (omega_g(i,2) , i = 1,nk)
+        READ(10, *) 
+        READ(10, *) 
+        READ(10, *) (gamma_g(i,2) , i = 1,nk)
+        READ(10, *) 
+        READ(10, *) 
+        READ(10, *) (theta(i,2) , i = 1,nk)
+    CLOSE(10)
+
+    OPEN(UNIT=10, FILE=mnp_chi_in_file_z, STATUS='OLD', ACTION='READ')
+        DO i = 1, 1000
+            READ(10, '(3A)') tmpstr
+            IF ( tmpstr == 'n_k') THEN
+                EXIT
+            ELSEIF ( i == 1000 ) THEN
+                CALL print_str('Error: Problem reading chi input file "'//mnp_chi_in_file_z//'". Exiting...')
+                CALL EXIT(1)
+            ENDIF
+        ENDDO
+!        READ(10, *)
+        READ(10, *) 
+        READ(10, *) 
+        READ(10, *) 
+        READ(10, *) (omega_g(i,3) , i = 1,nk)
+        READ(10, *) 
+        READ(10, *) 
+        READ(10, *) (gamma_g(i,3) , i = 1,nk)
+        READ(10, *) 
+        READ(10, *) 
+        READ(10, *) (theta(i,3) , i = 1,nk)
     CLOSE(10)
 
 END SUBROUTINE read_chi_in_file
@@ -342,7 +390,7 @@ SUBROUTINE read_matrices
     CHARACTER(LEN=256) :: rho_in, en_in, gma_in, big_gma_in, mu_in, pos_in,   &
                           rho_eq_in
     ! Dummy sum variables.
-    INTEGER            :: i, j
+    INTEGER            :: i, j, l
     
     ! Reading in matrices
     rho_in      = TRIM(in_folder)//'/rho.txt'
@@ -372,7 +420,7 @@ SUBROUTINE read_matrices
             en(num_lev),                                                      &
             big_gma(num_lev,num_lev),                                         &
             gma(num_lev,num_lev),                                             &
-            mu(num_lev,num_lev),                                              &
+            mu(num_lev,num_lev, 3),                                              &
             positions(npos,2)                                                 &
             )
 
@@ -408,7 +456,7 @@ SUBROUTINE read_matrices
     
     OPEN(UNIT=10, FILE=mu_in, STATUS='OLD', ACTION='READ')
         DO i = 1, num_lev
-            READ(10, *) (mu(i, j), j=1,num_lev)
+            READ(10,*) ( (mu(i,j,l), l=1,3), j=1,num_lev )
         ENDDO
     CLOSE(10)
     
@@ -460,7 +508,6 @@ SUBROUTINE read_in_file_rho
     surf_dist = 10.0_DP
     rad = 7.5_DP
     s_rad = 1.0_DP
-    s_alpha = 2.0_DP
     eps_0 = 1.0_DP
     ratio = 1.0_DP
     eps_s = 6.0_DP
@@ -484,8 +531,14 @@ SUBROUTINE read_in_file_rho
 
             SELECTCASE (label)
 
-            CASE ('mnp_chi_in_file')
-                READ(buffer, *, IOSTAT=ios) mnp_chi_in_file
+            CASE ('mnp_chi_in_file_x')
+                READ(buffer, *, IOSTAT=ios) mnp_chi_in_file_x
+
+            CASE ('mnp_chi_in_file_y')
+                READ(buffer, *, IOSTAT=ios) mnp_chi_in_file_y
+
+            CASE ('mnp_chi_in_file_z')
+                READ(buffer, *, IOSTAT=ios) mnp_chi_in_file_z
 
             CASE ('eps_0')
                 READ(buffer, *, IOSTAT=ios) eps_0
@@ -853,7 +906,7 @@ SUBROUTINE print_field_params
 
         CASE ( 'gauss_pulse' )
             CALL print_str_num_real('> Pulse Area', pulse_area, fid)
-            CALL print_str_num_real('> Height', 0.939437278699651_DP*pulse_area/REAL(mu(1,2),KIND=DP)/field_width, fid)
+!            CALL print_str_num_real('> Height', 0.939437278699651_DP*pulse_area/REAL(mu(1,2),KIND=DP)/field_width, fid)
             CALL print_str_num_real('> Full Width at Half Maximum', field_width, fid)
             CALL print_str_num_real('> Centre', field_centre, fid)
             CALL print_str_num_real('> Omega (eV)', omega*au_to_ev, fid)
@@ -866,7 +919,7 @@ SUBROUTINE print_field_params
 
         CASE ( 'gauss' )
             CALL print_str_num_real('> Pulse Area', pulse_area, fid)
-            CALL print_str_num_real('> Height', 0.939437278699651_DP*pulse_area/REAL(mu(1,2),KIND=DP)/field_width, fid)
+!            CALL print_str_num_real('> Height', 0.939437278699651_DP*pulse_area/REAL(mu(1,2),KIND=DP)/field_width, fid)
             CALL print_str_num_real('> Full Width at Half Maximum', field_width, fid)
             CALL print_str_num_real('> Centre', field_centre, fid)
 

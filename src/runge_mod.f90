@@ -9,7 +9,7 @@ MODULE runge_mod
     PRIVATE
     PUBLIC :: runge
 
-    REAL(KIND=DP) :: P_sqd, P_mnp, E_sqd, E_mnp
+    REAL(KIND=DP), DIMENSION(3) :: P_sqd, P_mnp, E_sqd, E_mnp
 CONTAINS
 
 SUBROUTINE runge
@@ -25,10 +25,10 @@ SUBROUTINE runge
 
     ! rho(t)
     COMPLEX(KIND=DP), ALLOCATABLE                 :: rho(:,:)
-    COMPLEX(KIND=DP) :: s(nk)
+    COMPLEX(KIND=DP) :: s(nk,3)
     ! RK variables
     COMPLEX(KIND=DP), ALLOCATABLE, DIMENSION(:,:,:) :: k_rho
-    COMPLEX(KIND=DP) :: k_s(4,nk)
+    COMPLEX(KIND=DP) :: k_s(4,nk,3)
 !    REAL(KIND=DP) :: P_mnp
     REAL(KIND=DP) :: fac(3)
     ! Dummy index variables
@@ -36,13 +36,13 @@ SUBROUTINE runge
     ! Time
     REAL(KIND=DP)                                 :: t
     ! Commuted matrix
-    COMPLEX(KIND=DP), ALLOCATABLE                 :: comm(:,:)
+    COMPLEX(KIND=DP), ALLOCATABLE                 :: comm(:,:,:)
     ! Dipole at each time-step
 !    REAL(KIND=DP)                                 :: P_sqd
     REAL(KIND=DP)  :: Q_mnp
     REAL(KIND=DP)  :: Q_sqd
     REAL(KIND=DP)  :: Q
-    REAL(KIND=DP)  :: dpdt_mnp
+    REAL(KIND=DP)  :: dpdt_mnp(3)
 !    REAL(KIND=DP)  :: E_mnp
     !
     ! Title for rho element column
@@ -56,7 +56,7 @@ SUBROUTINE runge
 
     ALLOCATE(                                                                 &
              rho(num_lev,num_lev),                                            &
-             comm(num_lev,num_lev),                                           &
+             comm(num_lev,num_lev,3),                                           &
              k_rho(4,num_lev,num_lev)                                             &
              )
     
@@ -138,26 +138,26 @@ SUBROUTINE runge
            EXIT
         ENDIF
 
-        CALL rk_de(t,                rho,                     k_rho(1,:,:), s,                 k_s(1,:))
-        CALL rk_de(t+0.5_DP*rk_step, rho+0.5_DP*k_rho(1,:,:), k_rho(2,:,:), s+0.5_DP*k_s(1,:), k_s(2,:))
-        CALL rk_de(t+0.5_DP*rk_step, rho+0.5_DP*k_rho(2,:,:), k_rho(3,:,:), s+0.5_DP*k_s(2,:), k_s(3,:))
-        CALL rk_de(t+rk_step,        rho+k_rho(3,:,:),        k_rho(4,:,:), s+k_s(3,:),        k_s(4,:))
+        CALL rk_de(t,                rho,                     k_rho(1,:,:), s,                 k_s(1,:,:))
+        CALL rk_de(t+0.5_DP*rk_step, rho+0.5_DP*k_rho(1,:,:), k_rho(2,:,:), s+0.5_DP*k_s(1,:,:), k_s(2,:,:))
+        CALL rk_de(t+0.5_DP*rk_step, rho+0.5_DP*k_rho(2,:,:), k_rho(3,:,:), s+0.5_DP*k_s(2,:,:), k_s(3,:,:))
+        CALL rk_de(t+rk_step,        rho+k_rho(3,:,:),        k_rho(4,:,:), s+k_s(3,:,:),        k_s(4,:,:))
 
         rho = rho + (k_rho(1,:,:) + 2.0_DP*k_rho(2,:,:) + 2.0_DP*k_rho(3,:,:) + k_rho(4,:,:))/6.0_DP
         t = t + rk_step
-        P_sqd = REAL(trace(MATMUL(rho,mu)))
+        P_sqd = REAL(trace(matmul_vec(rho,mu)))
 
 
         IF ( coupled ) THEN
-            s = s + (k_s(1,:) + 2.0_DP*k_s(2,:) + 2.0_DP*k_s(3,:) + k_s(4,:))/6.0_DP
+            s = s + (k_s(1,:,:) + 2.0_DP*k_s(2,:,:) + 2.0_DP*k_s(3,:,:) + k_s(4,:,:))/6.0_DP
 
             ! Calculating gold dipole
             P_mnp = 0.0_DP
             dpdt_mnp = 0.0_DP
             DO j=1,nk
-                P_mnp = P_mnp + theta(j)*2.0_DP*REAL(s(j))
-                dpdt_mnp = dpdt_mnp + 2.0_DP*theta(j)*( omega_g(j)*AIMAG(s(j)) - &
-                                                  gamma_g(j)*REAL(s(j)) )
+                P_mnp = P_mnp + theta(j,:)*2.0_DP*REAL(s(j,:))
+                dpdt_mnp = dpdt_mnp + 2.0_DP*theta(j,:)*( omega_g(j,:)*AIMAG(s(j,:)) - &
+                                                  gamma_g(j,:)*REAL(s(j,:)) )
             ENDDO
 
             E_mnp = efield(field,t) + s_alpha*P_sqd/eps_0/dist**3
@@ -165,7 +165,7 @@ SUBROUTINE runge
 
             IF ( t >= Q_mnp_start ) THEN
                 ! integrating E_mnp*dp/dt
-                Q_mnp = Q_mnp + dpdt_mnp*E_mnp
+                Q_mnp = Q_mnp + dot_prod_real_real(dpdt_mnp,E_mnp)
             ENDIF
 
         ENDIF
@@ -243,12 +243,12 @@ SUBROUTINE rk_de(t_in, rho_in, rho_out, s_in, s_out)
     IMPLICIT NONE
 
     COMPLEX(KIND=DP), INTENT(IN) :: rho_in(:,:)
-    COMPLEX(KIND=DP), INTENT(IN) :: s_in(:)
+    COMPLEX(KIND=DP), INTENT(IN) :: s_in(:,:)
     REAL(KIND=DP), INTENT(IN) :: t_in
     COMPLEX(KIND=DP), INTENT(OUT) :: rho_out(num_lev,num_lev)
-    COMPLEX(KIND=DP) :: comm(num_lev,num_lev)
-    COMPLEX(KIND=DP), INTENT(OUT) :: s_out(nk)
-    REAL(KIND=DP) :: ext_field
+    COMPLEX(KIND=DP) :: comm(num_lev,num_lev,3)
+    COMPLEX(KIND=DP), INTENT(OUT) :: s_out(nk,3)
+    REAL(KIND=DP) :: ext_field(3)
     REAL(KIND=DP) :: Gamma_n, Gamma_m
     COMPLEX(KIND=DP) :: eta
 
@@ -256,16 +256,19 @@ SUBROUTINE rk_de(t_in, rho_in, rho_out, s_in, s_out)
 
     IF ( coupled ) THEN
 
-        P_sqd = REAL(trace(MATMUL(rho_in,mu)))
+        P_sqd = REAL(trace(matmul_vec(rho_in,mu)))
         P_mnp = 0.0_DP
         DO n=1,nk
-            P_mnp = P_mnp + theta(n)*2.0_DP*REAL(s_in(n))
+            P_mnp = P_mnp + theta(n,:)*2.0_DP*REAL(s_in(n,:))
         ENDDO
 
         E_mnp = efield(field,t_in) + s_alpha*P_sqd/eps_0/dist**3
         E_sqd = efield(field,t_in) + s_alpha*P_mnp/eps_0/dist**3
 
-        s_out = -(gamma_g + ci*omega_g)*s_in + ci*E_mnp
+        DO n=1,nk
+            s_out(n,:) = -(gamma_g(n,:) + ci*omega_g(n,:))*s_in(n,:) + ci*E_mnp
+        ENDDO
+
         s_out = s_out*rk_step
 
         ext_field = E_sqd
@@ -304,7 +307,7 @@ SUBROUTINE rk_de(t_in, rho_in, rho_out, s_in, s_out)
            ENDIF
 
            rho_out(n,m) = -ci*(en(n)-en(m))*rho_in(n,m)   &
-                          +ci*ext_field*comm(n,m)         &
+               +ci*dot_prod_real_complex(ext_field,comm(n,m,:))         &
                           + eta
         ENDDO
     ENDDO
@@ -313,17 +316,47 @@ SUBROUTINE rk_de(t_in, rho_in, rho_out, s_in, s_out)
 
 END SUBROUTINE rk_de
 
-FUNCTION trace(A)
+FUNCTION matmul_vec(A,B)
     USE double
     IMPLICIT NONE
 
     COMPLEX(KIND=DP), INTENT(IN) :: A(:,:)
-    COMPLEX(KIND=DP) :: trace
-    INTEGER :: i
+    REAL(KIND=DP), INTENT(IN) :: B(:,:,:)
+    COMPLEX(KIND=DP), ALLOCATABLE :: matmul_vec(:,:,:)
+    COMPLEX(KIND=DP) :: y
 
-    trace = 0.0_DP
-    DO i = 1,SIZE(A,1)
-        trace = trace + A(i,i)
+    INTEGER :: s, n, m, nu, l
+
+    s = UBOUND(A,1)
+    ALLOCATE(matmul_vec(s,s,3))
+
+    DO n = 1,s
+        DO m = 1,s
+            DO l = 1,3
+                y = (0.0_DP, 0.0_DP)
+                DO nu = 1,s
+                    y = y + A(n, nu)*B(nu, m, l)
+                ENDDO
+                matmul_vec(n,m,l) = y
+            ENDDO
+        ENDDO
+    ENDDO
+
+END FUNCTION matmul_vec
+
+FUNCTION trace(A)
+    USE double
+    IMPLICIT NONE
+
+    COMPLEX(KIND=DP), INTENT(IN) :: A(:,:,:)
+    COMPLEX(KIND=DP) :: trace(3)
+    INTEGER :: i, l
+
+    DO l = 1,3
+        trace(l) = 0.0_DP
+        DO i = 1,SIZE(A,1)
+            trace(l) = trace(l) + A(i,i,l)
+        ENDDO
     ENDDO
 
 END FUNCTION trace
@@ -331,24 +364,57 @@ END FUNCTION trace
 FUNCTION commute(A, B)
     USE double
     IMPLICIT NONE
-    COMPLEX(KIND=DP), INTENT(IN), DIMENSION(:,:) :: A, B
-    COMPLEX(KIND=DP), ALLOCATABLE                :: commute(:,:)
+    REAL(KIND=DP), INTENT(IN) :: A(:,:,:)
+    COMPLEX(KIND=DP), INTENT(IN) :: B(:,:)
+    COMPLEX(KIND=DP), ALLOCATABLE                :: commute(:,:,:)
     COMPLEX(KIND=DP)                             :: y
-    INTEGER                                      :: s, nu, n, m
+    INTEGER                                      :: s, nu, n, m, l
 
     s = UBOUND(A,1)
-    ALLOCATE(commute(s,s))
+    ALLOCATE(commute(s,s,3))
 
     DO n = 1,s
         DO m = 1,s
-            y = (0.0_DP, 0.0_DP)
-            DO nu = 1,s
-                y = y + A(n, nu)*B(nu, m) - B(n, nu)*A(nu, m)
+            DO l = 1,3
+                y = (0.0_DP, 0.0_DP)
+                DO nu = 1,s
+                    y = y + A(n, nu, l)*B(nu, m) - B(n, nu)*A(nu, m, l)
+                ENDDO
+                commute(n,m,l) = y
             ENDDO
-            commute(n,m) = y
         ENDDO
     ENDDO
 
 END FUNCTION commute
+
+FUNCTION dot_prod_real_real(A,B)
+    USE double
+    IMPLICIT NONE
+    REAL(KIND=DP), INTENT(IN) :: A(3)
+    REAL(KIND=DP), INTENT(IN) :: B(3)
+    REAL(KIND=DP) :: dot_prod_real_real
+    INTEGER :: i
+
+    dot_prod_real_real = 0.0_DP
+    DO i = 1,3
+        dot_prod_real_real = dot_prod_real_real + A(i)*B(i)
+    ENDDO
+
+END FUNCTION dot_prod_real_real
+
+FUNCTION dot_prod_real_complex(A,B)
+    USE double
+    IMPLICIT NONE
+    REAL(KIND=DP), INTENT(IN) :: A(3)
+    COMPLEX(KIND=DP), INTENT(IN) :: B(3)
+    COMPLEX(KIND=DP) :: dot_prod_real_complex
+    INTEGER :: i
+
+    dot_prod_real_complex = (0.0_DP,0.0_DP)
+    DO i = 1,3
+        dot_prod_real_complex = dot_prod_real_complex + A(i)*B(i)
+    ENDDO
+
+END FUNCTION dot_prod_real_complex
 
 END MODULE runge_mod

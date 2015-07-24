@@ -69,7 +69,7 @@ FUNCTION gauss(t)
     REAL(KIND=DP)             :: gauss
 
 !    gauss = field_height * EXP(-2.772589_DP*(t-field_centre)**2/field_width**2)
-    gauss = eps_eff1*0.939437278699651_DP*pulse_area/REAL(mu(1,2),KIND=DP)/field_width *&
+    gauss = eps_eff1*0.939437278699651_DP*pulse_area/REAL(mu(1,2,1),KIND=DP)/field_width *&
             EXP(-2.772588722239781_DP*((t-field_centre)/field_width)**2)
 !    gauss = 0.939437278699651_DP*pulse_area/REAL(mu(1,2),KIND=DP)/field_width *&
 !            EXP(-2.772588722239781_DP*((t-field_centre)/field_width)**2)
@@ -128,64 +128,64 @@ FUNCTION pulse(t_in)
 
 END FUNCTION pulse
 
-FUNCTION e_sqd_rwa(t, mu, rho21)
-    USE double
-    USE gold_dielectric , ONLY : au_gamma
-    USE global_params ,   ONLY : ci
-    USE params ,          ONLY : omega, E0
-    USE params ,          ONLY : s_alpha, eps_eff1, dist, rad
-    USE params , ONLY : field_height, field_centre, field_width
-    IMPLICIT NONE
-
-    REAL(KIND=DP), INTENT(IN) :: t, mu
-    COMPLEX(KIND=DP), INTENT(IN) :: rho21
-    REAL(KIND=DP)             :: e_sqd_rwa
-    REAL(KIND=DP)             :: p_mnp
-    COMPLEX(KIND=DP)          :: gma
-    COMPLEX(KIND=DP)          :: omega_eff, G
-
-    gma   = au_gamma(omega)
-!    p_mnp = 0.5_DP*E0*rad**3 * ( REAL(gma)*COS(omega*t)                        &
-!                                +AIMAG(gma)*SIN(omega*t) )
-!    e_sqd_rwa = E0*COS(omega*t) + s_alpha*p_mnp/eps_eff1/dist**3
-
-    omega_eff = 0.5_DP*field_height*mu/eps_eff1 * (1.0_DP + s_alpha*rad**3*gma/dist**3)
-    omega_eff = omega_eff /COSH((t-field_centre)/field_width)
-    G = s_alpha**2*mu**2*rad**3*gma/eps_eff1**2/dist**6
-
-    e_sqd_rwa = 1.0_DP/mu*2.0_DP*REAL((omega_eff + G*rho21*EXP(ci*omega*t))*EXP(-ci*omega*t))
-
-END FUNCTION e_sqd_rwa
-
-FUNCTION e_sqd_chi_const(t, psqd)
-    USE double
-    USE params , ONLY : field, rad, s_alpha, dist, eps_eff1, eps_eff2, omega, field_centre, field_width, field_height
-    USE global_params , ONLY : ci
-    USE gold_dielectric , ONLY : au_gamma
-
-    REAL(KIND=DP), INTENT(IN) :: t
-    REAL(KIND=DP), INTENT(IN) :: psqd
-    REAL(KIND=DP) :: e_sqd_chi_const
-
-    REAL(KIND=DP) :: f, pmnp
-    COMPLEX(KIND=DP) :: gma
-!    COMPLEX(KIND=DP) :: omega_eff
-!    COMPLEX(KIND=DP) :: G
-
-
-    gma = au_gamma(omega)
-
-!    omega_eff = (1.0_DP + rad**3*s_alpha*gma/dist**3)/eps_eff1
-!    G = s_alpha**2*rad**3*gma/eps_eff1/dist**6
+!FUNCTION e_sqd_rwa(t, mu, rho21)
+!    USE double
+!    USE gold_dielectric , ONLY : au_gamma
+!    USE global_params ,   ONLY : ci
+!    USE params ,          ONLY : omega, E0
+!    USE params ,          ONLY : s_alpha, eps_eff1, dist, rad
+!    USE params , ONLY : field_height, field_centre, field_width
+!    IMPLICIT NONE
 !
-!    e_sqd_chi_const = omega_eff*efield(field, t) + G*psqd
+!    REAL(KIND=DP), INTENT(IN) :: t, mu
+!    COMPLEX(KIND=DP), INTENT(IN) :: rho21
+!    REAL(KIND=DP)             :: e_sqd_rwa
+!    REAL(KIND=DP)             :: p_mnp
+!    COMPLEX(KIND=DP)          :: gma
+!    COMPLEX(KIND=DP)          :: omega_eff, G
+!
+!    gma   = au_gamma(omega)
+!!    p_mnp = 0.5_DP*E0*rad**3 * ( REAL(gma)*COS(omega*t)                        &
+!!                                +AIMAG(gma)*SIN(omega*t) )
+!!    e_sqd_rwa = E0*COS(omega*t) + s_alpha*p_mnp/eps_eff1/dist**3
+!
+!    omega_eff = 0.5_DP*field_height*mu/eps_eff1 * (1.0_DP + s_alpha*rad**3*gma/dist**3)
+!    omega_eff = omega_eff /COSH((t-field_centre)/field_width)
+!    G = s_alpha**2*mu**2*rad**3*gma/eps_eff1**2/dist**6
+!
+!    e_sqd_rwa = 1.0_DP/mu*2.0_DP*REAL((omega_eff + G*rho21*EXP(ci*omega*t))*EXP(-ci*omega*t))
+!
+!END FUNCTION e_sqd_rwa
 
-    f = 1.0_DP/(COSH((t-field_centre)/field_width))
-    pmnp = 2.0_DP*REAL(rad**3*gma*(0.5_DP*field_height*f + s_alpha*psqd/dist**3)*EXP(ci*omega*t))
-
-    e_sqd_chi_const = (field_height*f*COS(omega*t) + s_alpha*pmnp/dist**3)/eps_eff1
-
-END FUNCTION e_sqd_chi_const
+!FUNCTION e_sqd_chi_const(t, psqd)
+!    USE double
+!    USE params , ONLY : field, rad, s_alpha, dist, eps_eff1, eps_eff2, omega, field_centre, field_width, field_height
+!    USE global_params , ONLY : ci
+!    USE gold_dielectric , ONLY : au_gamma
+!
+!    REAL(KIND=DP), INTENT(IN) :: t
+!    REAL(KIND=DP), INTENT(IN) :: psqd
+!    REAL(KIND=DP) :: e_sqd_chi_const
+!
+!    REAL(KIND=DP) :: f, pmnp
+!    COMPLEX(KIND=DP) :: gma
+!!    COMPLEX(KIND=DP) :: omega_eff
+!!    COMPLEX(KIND=DP) :: G
+!
+!
+!    gma = au_gamma(omega)
+!
+!!    omega_eff = (1.0_DP + rad**3*s_alpha*gma/dist**3)/eps_eff1
+!!    G = s_alpha**2*rad**3*gma/eps_eff1/dist**6
+!!
+!!    e_sqd_chi_const = omega_eff*efield(field, t) + G*psqd
+!
+!    f = 1.0_DP/(COSH((t-field_centre)/field_width))
+!    pmnp = 2.0_DP*REAL(rad**3*gma*(0.5_DP*field_height*f + s_alpha*psqd/dist**3)*EXP(ci*omega*t))
+!
+!    e_sqd_chi_const = (field_height*f*COS(omega*t) + s_alpha*pmnp/dist**3)/eps_eff1
+!
+!END FUNCTION e_sqd_chi_const
 
 
 FUNCTION efield(field, t)

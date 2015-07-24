@@ -6,7 +6,7 @@ CONTAINS
 
 FUNCTION au_di_function(omega)
     USE double
-    USE params , ONLY : wave_par
+    USE global_params , ONLY : wave_par
     IMPLICIT NONE
 
     COMPLEX(KIND=DP)            :: au_di_function
@@ -59,7 +59,7 @@ END FUNCTION au_di_function
 
 FUNCTION au_gamma(omega)
     USE double
-    USE sqd_mnp_params , ONLY : eps_0
+    USE params , ONLY : eps_0
     IMPLICIT NONE
 
     COMPLEX(KIND=DP)          :: au_gamma

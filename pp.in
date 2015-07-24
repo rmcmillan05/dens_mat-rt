@@ -1,0 +1,30 @@
+## File containing t in the first column and f(t) in the cloumn specified
+## by "read_col" [default read_col=2]
+in_file  './out/test.out'
+read_col  3
+read_first_npts  1000
+## Output folder in which the output files will placed [default out_folder='./']
+out_folder './out/'
+## Prefix name given to the job [default name='job']
+name 'test'
+## Start the processing from this point [default start_from=0.0]
+start_from  4000
+## Process up to this point [no default]
+go_to  10000
+## Number of frequencies given in "freqs". This must be specified BEFORE
+## "freqs" and is a required option [no default]
+num_freqs  2
+## Frequencies that are present in the motion (in a.u.) [no default]
+freqs  8.81984433810464E-02 9.18733785219230E-02
+## This frequency is highlighted with ! in the .freqs output file [default
+## probe_freq=0.0]
+probe_freq  8.81984433810464E-02
+## Maximum order (e.g. if sin^2 present => max_order=2) [default max_order=1]
+max_order  1
+## Whether or not to calculate the differences between all the frequencies
+## given in "freqs" [default calc_diffs=.FALSE.]
+calc_diffs  .FALSE.
+## If use_max_freq is true, then "go_to" is calculated from the maximum
+## frequency (minimum period) present, otherwise "go_to" is used [default
+## use_max_freq=.TRUE.]
+use_max_freq  .TRUE.

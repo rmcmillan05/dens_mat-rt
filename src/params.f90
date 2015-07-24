@@ -307,31 +307,31 @@ SUBROUTINE read_chi_in_file
     INTEGER :: i
     CHARACTER(LEN=3) :: tmpstr
 
-    OPEN(UNIT=10, FILE=mnp_chi_in_file_x, STATUS='OLD', ACTION='READ')
-        DO i = 1, 1000
-            READ(10, '(3A)') tmpstr
-            IF ( tmpstr == 'n_k') THEN
-                EXIT
-            ELSEIF ( i == 1000 ) THEN
-                CALL print_str('Error: Problem reading chi input file "'//mnp_chi_in_file_x//'". Exiting...')
-                CALL EXIT(1)
-            ENDIF
-        ENDDO
-!        READ(10, *)
-        READ(10, *) nk
-            ALLOCATE(theta(nk,3))
-            ALLOCATE(gamma_g(nk,3))
-            ALLOCATE(omega_g(nk,3))
-        READ(10, *) 
-        READ(10, *) 
-        READ(10, *) (omega_g(i,1) , i = 1,nk)
-        READ(10, *) 
-        READ(10, *) 
-        READ(10, *) (gamma_g(i,1) , i = 1,nk)
-        READ(10, *) 
-        READ(10, *) 
-        READ(10, *) (theta(i,1) , i = 1,nk)
-    CLOSE(10)
+    OPEN(UNIT=12, FILE=mnp_chi_in_file_x, STATUS='OLD', ACTION='READ')
+!        DO i = 1, 1000
+!            READ(12, '(3A)') tmpstr
+!            IF ( tmpstr == 'n_k') THEN
+!                EXIT
+!            ELSEIF ( i == 1000 ) THEN
+!                CALL print_str('Error: Problem reading chi input file "'//mnp_chi_in_file_x//'". Exiting...')
+!                CALL EXIT(1)
+!            ENDIF
+!        ENDDO
+!!        READ(10, *)
+!        READ(12, *) nk
+!            ALLOCATE(theta(nk,3))
+!            ALLOCATE(gamma_g(nk,3))
+!            ALLOCATE(omega_g(nk,3))
+!        READ(12, *) 
+!        READ(12, *) 
+!        READ(12, *) (omega_g(i,1) , i = 1,nk)
+!        READ(12, *) 
+!        READ(12, *) 
+!        READ(12, *) (gamma_g(i,1) , i = 1,nk)
+!        READ(12, *) 
+!        READ(12, *) 
+!        READ(12, *) (theta(i,1) , i = 1,nk)
+    CLOSE(12)
 
     OPEN(UNIT=10, FILE=mnp_chi_in_file_y, STATUS='OLD', ACTION='READ')
         DO i = 1, 1000
@@ -533,12 +533,15 @@ SUBROUTINE read_in_file_rho
 
             CASE ('mnp_chi_in_file_x')
                 READ(buffer, *, IOSTAT=ios) mnp_chi_in_file_x
+                CALL check_file(mnp_chi_in_file_x)
 
             CASE ('mnp_chi_in_file_y')
                 READ(buffer, *, IOSTAT=ios) mnp_chi_in_file_y
+                CALL check_file(mnp_chi_in_file_y)
 
             CASE ('mnp_chi_in_file_z')
                 READ(buffer, *, IOSTAT=ios) mnp_chi_in_file_z
+                CALL check_file(mnp_chi_in_file_z)
 
             CASE ('eps_0')
                 READ(buffer, *, IOSTAT=ios) eps_0

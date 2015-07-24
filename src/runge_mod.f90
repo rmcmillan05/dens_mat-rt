@@ -32,7 +32,7 @@ SUBROUTINE runge
 !    REAL(KIND=DP) :: P_mnp
     REAL(KIND=DP) :: fac(3)
     ! Dummy index variables
-    INTEGER                                       :: i, j
+    INTEGER                                       :: i, j, k
     ! Time
     REAL(KIND=DP)                                 :: t
     ! Commuted matrix
@@ -43,6 +43,7 @@ SUBROUTINE runge
     REAL(KIND=DP)  :: Q_sqd
     REAL(KIND=DP)  :: Q
     REAL(KIND=DP)  :: dpdt_mnp(3)
+    REAL(KIND=DP)  :: tmp_e
 !    REAL(KIND=DP)  :: E_mnp
     !
     ! Title for rho element column
@@ -77,27 +78,43 @@ SUBROUTINE runge
 
 
     ! Printing column headers
-    WRITE(out_id, '(A22)', ADVANCE='NO') ' t                    '
-    WRITE(out_id, '(A22)', ADVANCE='NO') ' field                '
+    WRITE(out_id, '(A22)', ADVANCE='NO') ' 1.t                  '
+    WRITE(out_id, '(A22)', ADVANCE='NO') ' 2.field              '
     IF ( coupled ) THEN
-        WRITE(out_id, '(A22)', ADVANCE='NO') ' E_SQD                '
-        WRITE(out_id, '(A22)', ADVANCE='NO') ' E_MNP                '
-        WRITE(out_id, '(A22)', ADVANCE='NO') ' P_SQD                '
-        WRITE(out_id, '(A22)', ADVANCE='NO') ' P_MNP                '
-        WRITE(out_id, '(A22)', ADVANCE='NO') ' d/dt(P_MNP)  '
+        WRITE(out_id, '(A22)', ADVANCE='NO') ' 3.E_SQD_x              '
+        WRITE(out_id, '(A22)', ADVANCE='NO') ' 4.E_SQD_y              '
+        WRITE(out_id, '(A22)', ADVANCE='NO') ' 5.E_SQD_z              '
+        WRITE(out_id, '(A22)', ADVANCE='NO') ' 6.E_MNP_x              '
+        WRITE(out_id, '(A22)', ADVANCE='NO') ' 7.E_MNP_y              '
+        WRITE(out_id, '(A22)', ADVANCE='NO') ' 8.E_MNP_z              '
+        WRITE(out_id, '(A22)', ADVANCE='NO') ' 9.P_SQD_x              '
+        WRITE(out_id, '(A22)', ADVANCE='NO') ' 10.P_SQD_z              '
+        WRITE(out_id, '(A22)', ADVANCE='NO') ' 11.P_SQD_y              '
+        WRITE(out_id, '(A22)', ADVANCE='NO') ' 12.P_MNP_x              '
+        WRITE(out_id, '(A22)', ADVANCE='NO') ' 13.P_MNP_y              '
+        WRITE(out_id, '(A22)', ADVANCE='NO') ' 14.P_MNP_z              '
+        WRITE(out_id, '(A22)', ADVANCE='NO') ' 15.d/dt(P_MNP)_x        '
+        WRITE(out_id, '(A22)', ADVANCE='NO') ' 16.d/dt(P_MNP)_y        '
+        WRITE(out_id, '(A22)', ADVANCE='NO') ' 17.d/dt(P_MNP)_z        '
     ELSE
-        WRITE(out_id, '(A22)', ADVANCE='NO') ' P_SQD                '
+        WRITE(out_id, '(A22)', ADVANCE='NO') ' 3.P_SQD_x              '
+        WRITE(out_id, '(A22)', ADVANCE='NO') ' 4.P_SQD_y              '
+        WRITE(out_id, '(A22)', ADVANCE='NO') ' 5.P_SQD_x              '
     ENDIF
+    k=17
     DO j = 1, npos 
-        WRITE(out_id, '(A5)', ADVANCE='NO') ' rho_'
+        k=k+1
+        WRITE(poschar, '(I2)') k
+        WRITE(out_id, '(A8)', ADVANCE='NO') ' '//poschar//'.rho_'
         WRITE(poschar, '(I2)') positions(j,1)
         WRITE(out_id, '(A3)', ADVANCE='NO') poschar//','
         WRITE(poschar, '(I2)') positions(j,2)
         WRITE(out_id, '(A2)', ADVANCE='NO') poschar
         IF ( positions(j,1) == positions(j,2) ) THEN
-            WRITE(out_id, '(A12)', ADVANCE='NO') ' '
+            WRITE(out_id, '(A9)', ADVANCE='NO') ' '
         ELSE
-            WRITE(out_id, '(A34)', ADVANCE='NO') ' '
+            k=k+1
+            WRITE(out_id, '(A31)', ADVANCE='NO') ' '
         ENDIF
     ENDDO
     WRITE(out_id,*)
@@ -114,11 +131,21 @@ SUBROUTINE runge
             WRITE(out_id, real_fmt, ADVANCE='NO') t  
             IF ( coupled ) THEN
                 WRITE(out_id, real_fmt, ADVANCE='NO') efield(field, t)
-                WRITE(out_id, real_fmt, ADVANCE='NO') E_sqd
-                WRITE(out_id, real_fmt, ADVANCE='NO') E_mnp
-                WRITE(out_id, real_fmt, ADVANCE='NO') P_sqd
-                WRITE(out_id, real_fmt, ADVANCE='NO') P_mnp
-                WRITE(out_id, real_fmt, ADVANCE='NO') dpdt_mnp
+                WRITE(out_id, real_fmt, ADVANCE='NO') E_sqd(1)
+                WRITE(out_id, real_fmt, ADVANCE='NO') E_sqd(2)
+                WRITE(out_id, real_fmt, ADVANCE='NO') E_sqd(3)
+                WRITE(out_id, real_fmt, ADVANCE='NO') E_mnp(1)
+                WRITE(out_id, real_fmt, ADVANCE='NO') E_mnp(2)
+                WRITE(out_id, real_fmt, ADVANCE='NO') E_mnp(3)
+                WRITE(out_id, real_fmt, ADVANCE='NO') P_sqd(1)
+                WRITE(out_id, real_fmt, ADVANCE='NO') P_sqd(2)
+                WRITE(out_id, real_fmt, ADVANCE='NO') P_sqd(3)
+                WRITE(out_id, real_fmt, ADVANCE='NO') P_mnp(1)
+                WRITE(out_id, real_fmt, ADVANCE='NO') P_mnp(2)
+                WRITE(out_id, real_fmt, ADVANCE='NO') P_mnp(3)
+                WRITE(out_id, real_fmt, ADVANCE='NO') dpdt_mnp(1)
+                WRITE(out_id, real_fmt, ADVANCE='NO') dpdt_mnp(2)
+                WRITE(out_id, real_fmt, ADVANCE='NO') dpdt_mnp(3)
             ELSE
                 WRITE(out_id, real_fmt, ADVANCE='NO') efield(field, t)
                 WRITE(out_id, real_fmt, ADVANCE='NO') P_sqd
@@ -146,7 +173,6 @@ SUBROUTINE runge
         rho = rho + (k_rho(1,:,:) + 2.0_DP*k_rho(2,:,:) + 2.0_DP*k_rho(3,:,:) + k_rho(4,:,:))/6.0_DP
         t = t + rk_step
         P_sqd = REAL(trace(matmul_vec(rho,mu)))
-
 
         IF ( coupled ) THEN
             s = s + (k_s(1,:,:) + 2.0_DP*k_s(2,:,:) + 2.0_DP*k_s(3,:,:) + k_s(4,:,:))/6.0_DP

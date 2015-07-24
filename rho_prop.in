@@ -6,7 +6,7 @@ in_folder   './DATA/data_2level/'
 out_folder  './test/'          
 name        'test'
 
-trange   120000000
+trange   12000
 rk_step  0.5
 out_pts  10000
 
@@ -42,12 +42,11 @@ coupled  .TRUE.
 #ratio    1
 dist     13.0
 rad      7.5
-s_alpha  2.0
 eps_0    1.0
 eps_s    6.0
 mnp_chi_in_file_x   'DATA/chi_data/Au_NS_eps_0-1.0.in'
 mnp_chi_in_file_y   'DATA/chi_data/Au_NS_eps_0-1.0.in'
 mnp_chi_in_file_z   'DATA/chi_data/Au_NS_eps_0-1.0.in'
 
-Q_sqd_start   119000000
-Q_mnp_start   100000000
+Q_sqd_start   11900
+Q_mnp_start   10000

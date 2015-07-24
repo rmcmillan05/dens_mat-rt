@@ -125,7 +125,6 @@ SUBROUTINE get_params
         Q_sqd_end = trange
     ENDIF
 
-    en = en/au_to_ev
 
 !    IF ( coupled ) THEN
         IF ( dist < 0.0_DP) THEN
@@ -135,12 +134,14 @@ SUBROUTINE get_params
                 dist = s_rad + surf_dist + rad
             ENDIF
         ENDIF
+        en = en/au_to_ev
+
         dist     = dist/length_par
         rad      = rad/length_par
         s_rad      = s_rad/length_par
         eps_eff1 = (2.0_DP*eps_0 + eps_s)/(3.0_DP*eps_0)
-!        eps_eff1 = (2.0_DP*eps_0 + eps_s)/3.0_DP
-        eps_eff2 = (2.0_DP*eps_0 + eps_s)/3.0_DP
+
+        mu = mu/eps_eff1
 
         omega_g    = omega_g/au_to_ev
         gamma_g    = gamma_g/au_to_ev

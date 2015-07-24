@@ -17,7 +17,7 @@ SUBROUTINE runge
     USE params , ONLY : npts, rk_step, positions, rho_0,  &
                         out_file, npos, trange, &
                         omega, Q_sqd_start, Q_mnp_start, &
-                        check_pt, proc_id, field_width, Q_sqd_end
+                        check_pt, proc_id, field_width, Q_sqd_end, big_gma, E0
     USE fields
     USE global_params , ONLY : std_out, power_par, au_to_ev, real_fmt
     USE print_mod
@@ -69,8 +69,7 @@ SUBROUTINE runge
         s = 0.0_DP
         Q_mnp = 0.0_DP
         Q_sqd = 0.0_DP
-        E_sqd = efield(field, t)/eps_eff1
-!        E_sqd = efield(field, t)
+        E_sqd = efield(field, t)
         E_mnp = efield(field, t)
         P_mnp = 0.0_DP
         dpdt_mnp = 0.0_DP
@@ -82,7 +81,6 @@ SUBROUTINE runge
     WRITE(out_id, '(A22)', ADVANCE='NO') ' field                '
     IF ( coupled ) THEN
         WRITE(out_id, '(A22)', ADVANCE='NO') ' E_SQD                '
-!        WRITE(out_id, '(A22)', ADVANCE='NO') ' E_SQD_RWA            '
         WRITE(out_id, '(A22)', ADVANCE='NO') ' E_MNP                '
         WRITE(out_id, '(A22)', ADVANCE='NO') ' P_SQD                '
         WRITE(out_id, '(A22)', ADVANCE='NO') ' P_MNP                '
@@ -117,14 +115,12 @@ SUBROUTINE runge
             IF ( coupled ) THEN
                 WRITE(out_id, real_fmt, ADVANCE='NO') efield(field, t)
                 WRITE(out_id, real_fmt, ADVANCE='NO') E_sqd
-!                WRITE(out_id, real_fmt, ADVANCE='NO') e_sqd_rwa(t, REAL(mu(2,1)), rho(2,1)) 
                 WRITE(out_id, real_fmt, ADVANCE='NO') E_mnp
                 WRITE(out_id, real_fmt, ADVANCE='NO') P_sqd
                 WRITE(out_id, real_fmt, ADVANCE='NO') P_mnp
                 WRITE(out_id, real_fmt, ADVANCE='NO') dpdt_mnp
             ELSE
                 WRITE(out_id, real_fmt, ADVANCE='NO') efield(field, t)
-!                WRITE(out_id, real_fmt, ADVANCE='NO') e_sqd_rwa(t, REAL(mu(2,1)), rho(2,1)) 
                 WRITE(out_id, real_fmt, ADVANCE='NO') P_sqd
             ENDIF
             DO j = 1, npos
@@ -151,6 +147,7 @@ SUBROUTINE runge
         t = t + rk_step
         P_sqd = REAL(trace(MATMUL(rho,mu)))
 
+
         IF ( coupled ) THEN
             s = s + (k_s(1,:) + 2.0_DP*k_s(2,:) + 2.0_DP*k_s(3,:) + k_s(4,:))/6.0_DP
 
@@ -163,9 +160,8 @@ SUBROUTINE runge
                                                   gamma_g(j)*REAL(s(j)) )
             ENDDO
 
-            E_mnp = efield(field,t) + s_alpha*P_sqd/eps_eff2/dist**3
-            E_sqd = efield(field,t)/eps_eff1 + s_alpha*P_mnp/eps_eff2/dist**3
-!            E_sqd = efield(field,t) + s_alpha*P_mnp/eps_eff2/dist**3
+            E_mnp = efield(field,t) + s_alpha*P_sqd/eps_0/dist**3
+            E_sqd = efield(field,t) + s_alpha*P_mnp/eps_0/dist**3
 
             IF ( t >= Q_mnp_start ) THEN
                 ! integrating E_mnp*dp/dt
@@ -187,7 +183,7 @@ SUBROUTINE runge
     IF ( coupled ) THEN
 
 !        Q_sqd = power_par*(en(2)-en(1))*gma(1,1)*Q_sqd*rk_step/(Q_sqd_end-Q_sqd_start)
-        Q_sqd = Q_sqd*rk_step/(Q_sqd_end-Q_sqd_start)
+        Q_sqd = power_par*(en(2)-en(1))*big_gma(2,1)*Q_sqd*rk_step/(Q_sqd_end-Q_sqd_start)
         Q_mnp = power_par*Q_mnp*rk_step/(trange-Q_mnp_start)
         Q = Q_mnp + Q_sqd
 
@@ -242,6 +238,7 @@ END SUBROUTINE print_param_change
 SUBROUTINE rk_de(t_in, rho_in, rho_out, s_in, s_out)
     USE double
     USE global_params , ONLY : ci
+    USE params, ONLY : big_gma, omega, E0
     USE fields !, ONLY : efield
     IMPLICIT NONE
 
@@ -252,8 +249,10 @@ SUBROUTINE rk_de(t_in, rho_in, rho_out, s_in, s_out)
     COMPLEX(KIND=DP) :: comm(num_lev,num_lev)
     COMPLEX(KIND=DP), INTENT(OUT) :: s_out(nk)
     REAL(KIND=DP) :: ext_field
+    REAL(KIND=DP) :: Gamma_n, Gamma_m
+    COMPLEX(KIND=DP) :: eta
 
-    INTEGER :: n, m
+    INTEGER :: n, m, nu
 
     IF ( coupled ) THEN
 
@@ -263,26 +262,50 @@ SUBROUTINE rk_de(t_in, rho_in, rho_out, s_in, s_out)
             P_mnp = P_mnp + theta(n)*2.0_DP*REAL(s_in(n))
         ENDDO
 
-        E_mnp = efield(field,t_in) + s_alpha*P_sqd/eps_eff2/dist**3
-        E_sqd = efield(field,t_in)/eps_eff1 + s_alpha*P_mnp/eps_eff2/dist**3
-!        E_sqd = efield(field,t_in) + s_alpha*P_mnp/eps_eff2/dist**3
+        E_mnp = efield(field,t_in) + s_alpha*P_sqd/eps_0/dist**3
+        E_sqd = efield(field,t_in) + s_alpha*P_mnp/eps_0/dist**3
 
         s_out = -(gamma_g + ci*omega_g)*s_in + ci*E_mnp
         s_out = s_out*rk_step
 
         ext_field = E_sqd
     ELSE
-!        ext_field = efield(field, t_in)
-!        ext_field = e_sqd_rwa(t_in, REAL(mu(2,1)),rho_in(2,1))
-        ext_field = e_sqd_chi_const(t_in, REAL(trace(MATMUL(rho_in,mu))))
+        ext_field = efield(field, t_in)
     ENDIF
 
     comm = commute(mu, rho_in)
     DO n=1,num_lev
         DO m=1,num_lev
-           rho_out(n,m) = -ci*(en(n)-en(m))*rho_in(n,m)                 &
-                          - gma(n,m)*(rho_in(n,m) - rho_eq(n,m))        &
-                          + ci*ext_field*comm(n,m)
+!           rho_out(n,m) = -ci*(en(n)-en(m))*rho_in(n,m)                 &
+!                          - gma(n,m)*(rho_in(n,m) - rho_eq(n,m))        &
+!                          + ci*ext_field*comm(n,m)
+
+           IF ( n == m) THEN
+               eta = 0.0_DP
+               DO nu = 1, num_lev
+                   IF ( nu > n ) THEN
+                       eta = eta + big_gma(n,nu)*rho_in(nu,nu)
+                   ELSEIF ( nu < n ) THEN
+                       eta = eta - big_gma(nu,n)*rho_in(n,n)
+                   ENDIF
+               ENDDO
+           ELSE
+               Gamma_n = 0.0_DP
+               Gamma_m = 0.0_DP
+               DO nu = 1, num_lev
+                   IF ( nu < n ) THEN
+                       Gamma_n = Gamma_n + big_gma(nu,n)
+                   ENDIF
+                   IF ( nu < m) THEN
+                       Gamma_m = Gamma_m + big_gma(nu,m)
+                   ENDIF
+               ENDDO
+               eta = -0.5_DP*(Gamma_n + Gamma_m)*rho_in(n,m)
+           ENDIF
+
+           rho_out(n,m) = -ci*(en(n)-en(m))*rho_in(n,m)   &
+                          +ci*ext_field*comm(n,m)         &
+                          + eta
         ENDDO
     ENDDO
 

@@ -78,30 +78,30 @@ SUBROUTINE runge
 
 
     ! Printing column headers
-    WRITE(out_id, '(A22)', ADVANCE='NO') ' 1.t                  '
-    WRITE(out_id, '(A22)', ADVANCE='NO') ' 2.field_x            '
-    WRITE(out_id, '(A22)', ADVANCE='NO') ' 3.field_y            '
-    WRITE(out_id, '(A22)', ADVANCE='NO') ' 4.field_z            '
+    WRITE(out_id, '(A22)', ADVANCE='NO') ' (1).t                '
+    WRITE(out_id, '(A22)', ADVANCE='NO') ' (2).field_x          '
+    WRITE(out_id, '(A22)', ADVANCE='NO') ' (3).field_y          '
+    WRITE(out_id, '(A22)', ADVANCE='NO') ' (4).field_z          '
     IF ( coupled ) THEN
-        WRITE(out_id, '(A22)', ADVANCE='NO') ' 5.E_SQD_x              '
-        WRITE(out_id, '(A22)', ADVANCE='NO') ' 6.E_SQD_y              '
-        WRITE(out_id, '(A22)', ADVANCE='NO') ' 7.E_SQD_z              '
-        WRITE(out_id, '(A22)', ADVANCE='NO') ' 8.E_MNP_x              '
-        WRITE(out_id, '(A22)', ADVANCE='NO') ' 9.E_MNP_y              '
-        WRITE(out_id, '(A22)', ADVANCE='NO') ' 10.E_MNP_z             '
-        WRITE(out_id, '(A22)', ADVANCE='NO') ' 11.P_SQD_x             '
-        WRITE(out_id, '(A22)', ADVANCE='NO') ' 12.P_SQD_z             '
-        WRITE(out_id, '(A22)', ADVANCE='NO') ' 13.P_SQD_y             '
-        WRITE(out_id, '(A22)', ADVANCE='NO') ' 14.P_MNP_x             '
-        WRITE(out_id, '(A22)', ADVANCE='NO') ' 15.P_MNP_y             '
-        WRITE(out_id, '(A22)', ADVANCE='NO') ' 16.P_MNP_z             '
-        WRITE(out_id, '(A22)', ADVANCE='NO') ' 17.d/dt(P_MNP)_x       '
-        WRITE(out_id, '(A22)', ADVANCE='NO') ' 18.d/dt(P_MNP)_y       '
-        WRITE(out_id, '(A22)', ADVANCE='NO') ' 19.d/dt(P_MNP)_z       '
+        WRITE(out_id, '(A22)', ADVANCE='NO') ' (5).E_SQD_x            '
+        WRITE(out_id, '(A22)', ADVANCE='NO') ' (6).E_SQD_y            '
+        WRITE(out_id, '(A22)', ADVANCE='NO') ' (7).E_SQD_z            '
+        WRITE(out_id, '(A22)', ADVANCE='NO') ' (8).E_MNP_x            '
+        WRITE(out_id, '(A22)', ADVANCE='NO') ' (9).E_MNP_y            '
+        WRITE(out_id, '(A22)', ADVANCE='NO') ' (10).E_MNP_z           '
+        WRITE(out_id, '(A22)', ADVANCE='NO') ' (11).P_SQD_x           '
+        WRITE(out_id, '(A22)', ADVANCE='NO') ' (12).P_SQD_y           '
+        WRITE(out_id, '(A22)', ADVANCE='NO') ' (13).P_SQD_z           '
+        WRITE(out_id, '(A22)', ADVANCE='NO') ' (14).P_MNP_x           '
+        WRITE(out_id, '(A22)', ADVANCE='NO') ' (15).P_MNP_y           '
+        WRITE(out_id, '(A22)', ADVANCE='NO') ' (16).P_MNP_z           '
+        WRITE(out_id, '(A22)', ADVANCE='NO') ' (17).d/dt(P_MNP)_x     '
+        WRITE(out_id, '(A22)', ADVANCE='NO') ' (18).d/dt(P_MNP)_y     '
+        WRITE(out_id, '(A22)', ADVANCE='NO') ' (19).d/dt(P_MNP)_z     '
     ELSE
-        WRITE(out_id, '(A22)', ADVANCE='NO') ' 3.P_SQD_x              '
-        WRITE(out_id, '(A22)', ADVANCE='NO') ' 4.P_SQD_y              '
-        WRITE(out_id, '(A22)', ADVANCE='NO') ' 5.P_SQD_x              '
+        WRITE(out_id, '(A22)', ADVANCE='NO') ' (3).P_SQD_x            '
+        WRITE(out_id, '(A22)', ADVANCE='NO') ' (4).P_SQD_y            '
+        WRITE(out_id, '(A22)', ADVANCE='NO') ' (5).P_SQD_x            '
     ENDIF
     k=19
     DO j = 1, npos 
@@ -130,9 +130,9 @@ SUBROUTINE runge
 
         IF ( MOD(i, check_pt) == 0 ) THEN
             !! PRINTING VALUES !!
+            tmp_e = efield(field,t)
             WRITE(out_id, real_fmt, ADVANCE='NO') t  
             IF ( coupled ) THEN
-                tmp_e = efield(field,t)
                 WRITE(out_id, real_fmt, ADVANCE='NO') tmp_e(1)
                 WRITE(out_id, real_fmt, ADVANCE='NO') tmp_e(2)
                 WRITE(out_id, real_fmt, ADVANCE='NO') tmp_e(3)
@@ -152,8 +152,12 @@ SUBROUTINE runge
                 WRITE(out_id, real_fmt, ADVANCE='NO') dpdt_mnp(2)
                 WRITE(out_id, real_fmt, ADVANCE='NO') dpdt_mnp(3)
             ELSE
-                WRITE(out_id, real_fmt, ADVANCE='NO') efield(field, t)
-                WRITE(out_id, real_fmt, ADVANCE='NO') P_sqd
+                WRITE(out_id, real_fmt, ADVANCE='NO') tmp_e(1)
+                WRITE(out_id, real_fmt, ADVANCE='NO') tmp_e(2)
+                WRITE(out_id, real_fmt, ADVANCE='NO') tmp_e(3)
+                WRITE(out_id, real_fmt, ADVANCE='NO') P_sqd(1)
+                WRITE(out_id, real_fmt, ADVANCE='NO') P_sqd(2)
+                WRITE(out_id, real_fmt, ADVANCE='NO') P_sqd(3)
             ENDIF
             DO j = 1, npos
                     WRITE(out_id, real_fmt, ADVANCE='NO')                         &
@@ -246,20 +250,32 @@ SUBROUTINE print_param_change
 
     SELECTCASE ( field_change_param )
 
-        CASE( 'field_height' )
-            WRITE(std_out,real_fmt, ADVANCE='NO') field_height
+!        CASE( 'field_height' )
+!            WRITE(std_out,real_fmt, ADVANCE='NO') field_height
+!
+!        CASE( 'pulse_area' )
+!            WRITE(std_out,real_fmt, ADVANCE='NO') pulse_area
+!
+!        CASE ( 'field_width' )
+!            WRITE(std_out,real_fmt, ADVANCE='NO') field_width
 
-        CASE( 'pulse_area' )
-            WRITE(std_out,real_fmt, ADVANCE='NO') pulse_area
+        CASE ( 'omega.x' )
+            WRITE(std_out,real_fmt, ADVANCE='NO') omega(1)*au_to_ev
 
-        CASE ( 'field_width' )
-            WRITE(std_out,real_fmt, ADVANCE='NO') field_width
+        CASE ( 'omega.y' )
+            WRITE(std_out,real_fmt, ADVANCE='NO') omega(2)*au_to_ev
 
-        CASE ( 'omega' )
-            WRITE(std_out,real_fmt, ADVANCE='NO') omega*au_to_ev
+        CASE ( 'omega.z' )
+            WRITE(std_out,real_fmt, ADVANCE='NO') omega(3)*au_to_ev
 
-        CASE( 'I0' )
-            WRITE(std_out,real_fmt, ADVANCE='NO') I0
+        CASE( 'I0.x' )
+            WRITE(std_out,real_fmt, ADVANCE='NO') I0(1)
+
+        CASE( 'I0.y' )
+            WRITE(std_out,real_fmt, ADVANCE='NO') I0(2)
+
+        CASE( 'I0.z' )
+            WRITE(std_out,real_fmt, ADVANCE='NO') I0(3)
 
 
     END SELECT

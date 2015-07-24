@@ -88,17 +88,27 @@ SUBROUTINE change_parameter(i, suffix_int)
     ENDIF
 
     SELECTCASE ( field_change_param )
-        CASE ( 'I0' )
-            I0  = out_val
-            E0  = SQRT(I0 / intens_par)
-        CASE ( 'pulse_area' )
-            pulse_area  = out_val
-        CASE ( 'field_height' )
-            field_height  = out_val
-        CASE ( 'field_width' )
-            field_width  = out_val
-        CASE ( 'omega' )
-            omega        = out_val
+        CASE ( 'I0.x' )
+            I0(1)  = out_val
+            E0(1)  = SQRT(I0(1) / intens_par)
+        CASE ( 'I0.y' )
+            I0(2)  = out_val
+            E0(2)  = SQRT(I0(2) / intens_par)
+        CASE ( 'I0.z' )
+            I0(3)  = out_val
+            E0(3)  = SQRT(I0(3) / intens_par)
+!        CASE ( 'pulse_area' )
+!            pulse_area  = out_val
+!        CASE ( 'field_height' )
+!            field_height  = out_val
+!        CASE ( 'field_width' )
+!            field_width  = out_val
+        CASE ( 'omega.x' )
+            omega(1)        = out_val
+        CASE ( 'omega.y' )
+            omega(2)        = out_val
+        CASE ( 'omega.z' )
+            omega(3)        = out_val
     END SELECT
 
 END SUBROUTINE change_parameter

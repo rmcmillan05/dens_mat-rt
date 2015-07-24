@@ -4,129 +4,131 @@ MODULE fields
 
 CONTAINS
 
-FUNCTION sinfield(t)
+FUNCTION sinfield(t,i)
     USE double
     USE params , ONLY : E0, omega, pulse_stop
     IMPLICIT NONE
 
+    INTEGER, INTENT(IN) :: i
     REAL(KIND=DP), INTENT(IN) :: t
     REAL(KIND=DP)             :: sinfield
 
     IF ( t <= pulse_stop ) THEN
-        sinfield = E0 * SIN(omega * t)
+        sinfield = E0(i) * SIN(omega(i) * t)
     ELSE
         sinfield = 0.0_DP
     ENDIF
 
 END FUNCTION sinfield
 
-FUNCTION pump_probe(t)
-    USE double
-    USE params , ONLY : E0, omega, E0_control, omega_control
+!FUNCTION pump_probe(t)
+!    USE double
+!    USE params , ONLY : E0, omega, E0_control, omega_control
+!
+!    REAL(KIND=DP), INTENT(IN) :: t
+!    REAL(KIND=DP) :: pump_probe
+!
+!    pump_probe = E0*COS(omega*t) + E0_control*COS(omega_control*t)
+!
+!END FUNCTION pump_probe
 
-    REAL(KIND=DP), INTENT(IN) :: t
-    REAL(KIND=DP) :: pump_probe
-
-    pump_probe = E0*COS(omega*t) + E0_control*COS(omega_control*t)
-
-END FUNCTION pump_probe
-
-FUNCTION cosfield(t)
+FUNCTION cosfield(t,i)
     USE double
     USE params , ONLY : E0, omega
     IMPLICIT NONE
 
+    INTEGER, INTENT(IN) :: i
     REAL(KIND=DP), INTENT(IN) :: t
     REAL(KIND=DP)             :: cosfield
 
-    cosfield = E0 * COS(omega * t)
+    cosfield = E0(i) * COS(omega(i) * t)
 
 END FUNCTION cosfield
 
-FUNCTION step(t)
-    USE double
-    USE params, ONLY : field_height, field_centre, field_width
-    IMPLICIT NONE
+!FUNCTION step(t)
+!    USE double
+!    USE params, ONLY : field_height, field_centre, field_width
+!    IMPLICIT NONE
+!
+!    REAL(KIND=DP), INTENT(IN) :: t
+!    REAL(KIND=DP)             :: step
+!
+!    IF (t > field_centre .AND. t <= field_centre+field_width) THEN
+!       step = field_height
+!    ELSE
+!       step = 0.0_DP
+!    ENDIF 
+!
+!END FUNCTION step
 
-    REAL(KIND=DP), INTENT(IN) :: t
-    REAL(KIND=DP)             :: step
-
-    IF (t > field_centre .AND. t <= field_centre+field_width) THEN
-       step = field_height
-    ELSE
-       step = 0.0_DP
-    ENDIF 
-
-END FUNCTION step
-
-FUNCTION gauss(t)
-    USE double
-    USE params, ONLY : field_width, field_centre, pulse_area, mu, eps_eff1, field_height
-    USE global_params , ONLY : pi
-    IMPLICIT NONE
-
-    REAL(KIND=DP), INTENT(IN) :: t
-    REAL(KIND=DP)             :: gauss
-
-!    gauss = field_height * EXP(-2.772589_DP*(t-field_centre)**2/field_width**2)
-    gauss = eps_eff1*0.939437278699651_DP*pulse_area/REAL(mu(1,2,1),KIND=DP)/field_width *&
-            EXP(-2.772588722239781_DP*((t-field_centre)/field_width)**2)
-!    gauss = 0.939437278699651_DP*pulse_area/REAL(mu(1,2),KIND=DP)/field_width *&
+!FUNCTION gauss(t)
+!    USE double
+!    USE params, ONLY : field_width, field_centre, pulse_area, mu, eps_eff1, field_height
+!    USE global_params , ONLY : pi
+!    IMPLICIT NONE
+!
+!    REAL(KIND=DP), INTENT(IN) :: t
+!    REAL(KIND=DP)             :: gauss
+!
+!!    gauss = field_height * EXP(-2.772589_DP*(t-field_centre)**2/field_width**2)
+!    gauss = eps_eff1*0.939437278699651_DP*pulse_area/REAL(mu(1,2,1),KIND=DP)/field_width *&
 !            EXP(-2.772588722239781_DP*((t-field_centre)/field_width)**2)
+!!    gauss = 0.939437278699651_DP*pulse_area/REAL(mu(1,2),KIND=DP)/field_width *&
+!!            EXP(-2.772588722239781_DP*((t-field_centre)/field_width)**2)
+!
+!END FUNCTION gauss
 
-END FUNCTION gauss
+!FUNCTION sech_pulse(t)
+!    USE double
+!    USE params, ONLY : field_height, field_centre, field_width, omega
+!    IMPLICIT NONE
+!
+!    REAL(KIND=DP), INTENT(IN) :: t
+!    REAL(KIND=DP)             :: sech_pulse
+!
+!    sech_pulse = field_height*COS(omega*t)/COSH((t-field_centre)/field_width)
+!
+!END FUNCTION sech_pulse
 
-FUNCTION sech_pulse(t)
-    USE double
-    USE params, ONLY : field_height, field_centre, field_width, omega
-    IMPLICIT NONE
-
-    REAL(KIND=DP), INTENT(IN) :: t
-    REAL(KIND=DP)             :: sech_pulse
-
-    sech_pulse = field_height*COS(omega*t)/COSH((t-field_centre)/field_width)
-
-END FUNCTION sech_pulse
-
-FUNCTION gauss_pulse(t)
-    USE double
-    USE params, ONLY : omega
-    IMPLICIT NONE
-
-    REAL(KIND=DP), INTENT(IN) :: t
-    REAL(KIND=DP)             :: gauss_pulse
-
-    gauss_pulse = SIN(omega*t)*gauss(t)
-
-END FUNCTION gauss_pulse
+!FUNCTION gauss_pulse(t)
+!    USE double
+!    USE params, ONLY : omega
+!    IMPLICIT NONE
+!
+!    REAL(KIND=DP), INTENT(IN) :: t
+!    REAL(KIND=DP)             :: gauss_pulse
+!
+!    gauss_pulse = SIN(omega*t)*gauss(t)
+!
+!END FUNCTION gauss_pulse
 
 
-FUNCTION pulse(t_in)
-    USE double
-    USE params ,        ONLY : omega, E0, pulse_phase, pulse_start, pulse_cycles
-    USE global_params , ONLY : pi
-    IMPLICIT NONE
-
-    REAL(KIND=DP), INTENT(IN) :: t_in
-    REAL(KIND=DP)             :: pulse_lim
-    REAL(KIND=DP)             :: t
-    REAL(KIND=DP)             :: pulse
-    REAL(KIND=DP)             :: f, df, w
-    
-    pulse_lim = 2.0_DP * pi * pulse_cycles / omega
-    t = t_in - pulse_start
-
-    IF ( t >= 0.0_DP .AND. t <= pulse_lim ) THEN
-        f     = SIN(pi * t / pulse_lim) ** 2
-        df    = 2.0_DP * SIN(pi * t / pulse_lim) *                             &
-                         COS(pi * t / pulse_lim) * pi / pulse_lim
-        w     = omega * t + pulse_phase
-        pulse = E0 * f * SIN(w) - E0 * df * COS(w) / omega
-    ELSE
-        pulse = 0.0_DP
-    ENDIF
-
-END FUNCTION pulse
+!FUNCTION pulse(t_in)
+!    USE double
+!    USE params ,        ONLY : omega, E0, pulse_phase, pulse_start, pulse_cycles
+!    USE global_params , ONLY : pi
+!    IMPLICIT NONE
+!
+!    REAL(KIND=DP), INTENT(IN) :: t_in
+!    REAL(KIND=DP)             :: pulse_lim
+!    REAL(KIND=DP)             :: t
+!    REAL(KIND=DP)             :: pulse
+!    REAL(KIND=DP)             :: f, df, w
+!    
+!    pulse_lim = 2.0_DP * pi * pulse_cycles / omega
+!    t = t_in - pulse_start
+!
+!    IF ( t >= 0.0_DP .AND. t <= pulse_lim ) THEN
+!        f     = SIN(pi * t / pulse_lim) ** 2
+!        df    = 2.0_DP * SIN(pi * t / pulse_lim) *                             &
+!                         COS(pi * t / pulse_lim) * pi / pulse_lim
+!        w     = omega * t + pulse_phase
+!        pulse = E0 * f * SIN(w) - E0 * df * COS(w) / omega
+!    ELSE
+!        pulse = 0.0_DP
+!    ENDIF
+!
+!END FUNCTION pulse
 
 !FUNCTION e_sqd_rwa(t, mu, rho21)
 !    USE double
@@ -200,26 +202,26 @@ FUNCTION efield(field, t)
 
     DO i = 1,3
         SELECT CASE ( TRIM(field(i)) )
-            CASE ('step')
-                efield(i) = step(t)
-            CASE ('pulse')
-                efield(i) = pulse(t)
+!            CASE ('step')
+!                efield(i) = step(t)
+!            CASE ('pulse')
+!                efield(i) = pulse(t)
             CASE ('sinfield')
-                efield(i) = sinfield(t)
+                efield(i) = sinfield(t,i)
             CASE ('cosfield')
-                efield(i) = cosfield(t)
-    !        CASE ('e_sqd_rwa')
-    !            efield = e_sqd_rwa(t)
+                efield(i) = cosfield(t,i)
+!            CASE ('e_sqd_rwa')
+!                efield = e_sqd_rwa(t)
             CASE ('zero')
                 efield(i) = 0.0_DP * t
-            CASE ('gauss')
-                efield(i) = gauss(t)
-            CASE ('gauss_pulse')
-                efield(i) = gauss_pulse(t)
-            CASE ('sech_pulse')
-                efield(i) = sech_pulse(t)
-            CASE ('pump_probe')
-                efield(i) = pump_probe(t)
+!            CASE ('gauss')
+!                efield(i) = gauss(t)
+!            CASE ('gauss_pulse')
+!                efield(i) = gauss_pulse(t)
+!            CASE ('sech_pulse')
+!                efield(i) = sech_pulse(t)
+!            CASE ('pump_probe')
+!                efield(i) = pump_probe(t)
             CASE DEFAULT
                 CALL print_str("Error: field '"//TRIM(field(i))//                     &
                                "' not recognized.  Exiting...")

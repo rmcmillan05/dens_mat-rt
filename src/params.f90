@@ -9,9 +9,9 @@ MODULE params
     REAL(KIND=DP)      :: field_param_to
     INTEGER            :: field_param_npts
     REAL(KIND=DP)      :: field_param_step
-    REAL(KIND=DP)      :: omega, omega_control
-    REAL(KIND=DP)      :: I0, I0_control
-    REAL(KIND=DP)      :: E0, E0_control
+    REAL(KIND=DP)      :: omega(3), omega_control
+    REAL(KIND=DP)      :: I0(3), I0_control
+    REAL(KIND=DP)      :: E0(3), E0_control
     !
     ! SQD_MNP
     !
@@ -580,13 +580,13 @@ SUBROUTINE read_in_file_rho
                 READ(buffer, *, IOSTAT=ios) field_param_npts
 
             CASE ('omega')
-                READ(buffer, *, IOSTAT=ios) omega
+                READ(buffer, *, IOSTAT=ios) (omega(i), i=1,3)
 
             CASE ('omega_control')
                 READ(buffer, *, IOSTAT=ios) omega_control
 
             CASE ('I0')
-                READ(buffer, *, IOSTAT=ios) I0
+                READ(buffer, *, IOSTAT=ios) (I0(i), i=1,3)
 
             CASE ('I0_control')
                 READ(buffer, *, IOSTAT=ios) I0_control
@@ -911,42 +911,42 @@ SUBROUTINE print_field_params
 
         SELECTCASE ( field(i) )
 
-        CASE ( 'gauss_pulse' )
-            CALL print_str_num_real('> Pulse Area', pulse_area, fid)
-!            CALL print_str_num_real('> Height', 0.939437278699651_DP*pulse_area/REAL(mu(1,2),KIND=DP)/field_width, fid)
-            CALL print_str_num_real('> Full Width at Half Maximum', field_width, fid)
-            CALL print_str_num_real('> Centre', field_centre, fid)
-            CALL print_str_num_real('> Omega (eV)', omega*au_to_ev, fid)
-
-        CASE ( 'sech_pulse' )
-            CALL print_str_num_real('> Height', field_height, fid)
-            CALL print_str_num_real('> Width', field_width, fid)
-            CALL print_str_num_real('> Centre', field_centre, fid)
-            CALL print_str_num_real('> Omega (eV)', omega*au_to_ev, fid)
-
-        CASE ( 'gauss' )
-            CALL print_str_num_real('> Pulse Area', pulse_area, fid)
-!            CALL print_str_num_real('> Height', 0.939437278699651_DP*pulse_area/REAL(mu(1,2),KIND=DP)/field_width, fid)
-            CALL print_str_num_real('> Full Width at Half Maximum', field_width, fid)
-            CALL print_str_num_real('> Centre', field_centre, fid)
-
-        CASE ( 'step' )
-            CALL print_str_num_real('> Height', field_height, fid)
-            CALL print_str_num_real('> Width', field_width, fid)
-            CALL print_str_num_real('> Centre', field_centre, fid)
-
-        CASE ( 'pulse' )
-            CALL print_str_num_real('> Pulse start', pulse_start, fid)
-            CALL print_str_num_real('> Pulse phase', pulse_phase, fid)
-            CALL print_str_num_real('> Number of cycles', pulse_cycles, fid)
+!        CASE ( 'gauss_pulse' )
+!            CALL print_str_num_real('> Pulse Area', pulse_area, fid)
+!!            CALL print_str_num_real('> Height', 0.939437278699651_DP*pulse_area/REAL(mu(1,2),KIND=DP)/field_width, fid)
+!            CALL print_str_num_real('> Full Width at Half Maximum', field_width, fid)
+!            CALL print_str_num_real('> Centre', field_centre, fid)
+!            CALL print_str_num_real('> Omega (eV)', omega(i)*au_to_ev, fid)
+!
+!        CASE ( 'sech_pulse' )
+!            CALL print_str_num_real('> Height', field_height, fid)
+!            CALL print_str_num_real('> Width', field_width, fid)
+!            CALL print_str_num_real('> Centre', field_centre, fid)
+!            CALL print_str_num_real('> Omega (eV)', omega(i)*au_to_ev, fid)
+!
+!        CASE ( 'gauss' )
+!            CALL print_str_num_real('> Pulse Area', pulse_area, fid)
+!!            CALL print_str_num_real('> Height', 0.939437278699651_DP*pulse_area/REAL(mu(1,2),KIND=DP)/field_width, fid)
+!            CALL print_str_num_real('> Full Width at Half Maximum', field_width, fid)
+!            CALL print_str_num_real('> Centre', field_centre, fid)
+!
+!        CASE ( 'step' )
+!            CALL print_str_num_real('> Height', field_height, fid)
+!            CALL print_str_num_real('> Width', field_width, fid)
+!            CALL print_str_num_real('> Centre', field_centre, fid)
+!
+!        CASE ( 'pulse' )
+!            CALL print_str_num_real('> Pulse start', pulse_start, fid)
+!            CALL print_str_num_real('> Pulse phase', pulse_phase, fid)
+!            CALL print_str_num_real('> Number of cycles', pulse_cycles, fid)
 
         CASE ( 'zero' )
 
         CASE DEFAULT
-            CALL print_str_num_real('Laser Frequency (a.u.)', omega, fid)
-            CALL print_str_num_real('Laser Energy (eV)', omega*au_to_ev, fid)
-            CALL print_str_num_real('Laser Intenstiy (W/cm^2)', I0, fid)
-            CALL print_str_num_real('Laser Amplitude (E0) (a.u.)', E0, fid)
+            CALL print_str_num_real('Laser Frequency (a.u.)', omega(i), fid)
+            CALL print_str_num_real('Laser Energy (eV)', omega(i)*au_to_ev, fid)
+            CALL print_str_num_real('Laser Intenstiy (W/cm^2)', I0(i), fid)
+            CALL print_str_num_real('Laser Amplitude (E0) (a.u.)', E0(i), fid)
 
         END SELECT
 

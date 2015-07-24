@@ -10,32 +10,37 @@ trange   12000
 rk_step  0.5
 out_pts  10000
 
-field  cosfield, zero, zero
-omega  2.5
-I0     1.0
+field  cosfield, cosfield, zero
+omega  2.5, 2.5, 0.0
+I0     1.0, 1.0, 0.0
 
-#field         gauss
-#pulse_area    16
-#field_width   240000
-#field_centre  5000.0
+##field         gauss
+##pulse_area    16
+##field_width   240000
+##field_centre  5000.0
 
-#field         gauss_pulse
-#omega         2.5
-#pulse_area    16
-#field_width   240000
-#field_centre  5000.0
+##field         gauss_pulse
+##omega         2.5
+##pulse_area    16
+##field_width   240000
+##field_centre  5000.0
 
-#field         pump_probe
-#omega         2.5
-#I0            1.0E3
-#omega_control 2.4
-#I0_control    1.0E3
+##field         pump_probe
+##omega         2.5
+##I0            1.0E3
+##omega_control 2.4
+##I0_control    1.0E3
 
-#field_change_param  omega
-#field_param_from    2.4
-#field_param_to      2.6
-#field_param_npts    10
+field_change_param  omega.x
+field_param_from    2.4
+field_param_to      2.6
+field_param_npts    2
 
+#field_change_param  I0.y
+#field_param_from    1.0
+#field_param_to      1.0E3
+#field_param_npts    20
+#
 coupled  .TRUE.
 #surf_dist 6.0
 #s_rad     6.6

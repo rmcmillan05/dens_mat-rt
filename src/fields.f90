@@ -193,36 +193,39 @@ FUNCTION efield(field, t)
     USE print_mod , ONLY : print_str
     IMPLICIT NONE
 
-    CHARACTER(LEN=*), INTENT(INOUT) :: field
+    CHARACTER(LEN=*), INTENT(INOUT) :: field(3)
     REAL(KIND=DP), INTENT(IN)       :: t
-    REAL(KIND=DP)                   :: efield
+    REAL(KIND=DP)                   :: efield(3)
+    INTEGER :: i
 
-    SELECT CASE ( TRIM(field) )
-        CASE ('step')
-            efield = step(t)
-        CASE ('pulse')
-            efield = pulse(t)
-        CASE ('sinfield')
-            efield = sinfield(t)
-        CASE ('cosfield')
-            efield = cosfield(t)
-!        CASE ('e_sqd_rwa')
-!            efield = e_sqd_rwa(t)
-        CASE ('zero')
-            efield = 0.0_DP * t
-        CASE ('gauss')
-            efield = gauss(t)
-        CASE ('gauss_pulse')
-            efield = gauss_pulse(t)
-        CASE ('sech_pulse')
-            efield = sech_pulse(t)
-        CASE ('pump_probe')
-            efield = pump_probe(t)
-        CASE DEFAULT
-            CALL print_str("Error: field '"//TRIM(field)//                     &
-                           "' not recognized.  Exiting...")
-            CALL EXIT(2)
-    END SELECT
+    DO i = 1,3
+        SELECT CASE ( TRIM(field(i)) )
+            CASE ('step')
+                efield(i) = step(t)
+            CASE ('pulse')
+                efield(i) = pulse(t)
+            CASE ('sinfield')
+                efield(i) = sinfield(t)
+            CASE ('cosfield')
+                efield(i) = cosfield(t)
+    !        CASE ('e_sqd_rwa')
+    !            efield = e_sqd_rwa(t)
+            CASE ('zero')
+                efield(i) = 0.0_DP * t
+            CASE ('gauss')
+                efield(i) = gauss(t)
+            CASE ('gauss_pulse')
+                efield(i) = gauss_pulse(t)
+            CASE ('sech_pulse')
+                efield(i) = sech_pulse(t)
+            CASE ('pump_probe')
+                efield(i) = pump_probe(t)
+            CASE DEFAULT
+                CALL print_str("Error: field '"//TRIM(field(i))//                     &
+                               "' not recognized.  Exiting...")
+                CALL EXIT(2)
+        END SELECT
+    ENDDO
 
 END FUNCTION efield
 

@@ -3,7 +3,7 @@ MODULE params
     IMPLICIT NONE
     
     ! Input field
-    CHARACTER(LEN=256) :: field
+    CHARACTER(LEN=256) :: field(3)
     CHARACTER(LEN=256) :: field_change_param
     REAL(KIND=DP)      :: field_param_from
     REAL(KIND=DP)      :: field_param_to
@@ -308,29 +308,29 @@ SUBROUTINE read_chi_in_file
     CHARACTER(LEN=3) :: tmpstr
 
     OPEN(UNIT=12, FILE=mnp_chi_in_file_x, STATUS='OLD', ACTION='READ')
-!        DO i = 1, 1000
-!            READ(12, '(3A)') tmpstr
-!            IF ( tmpstr == 'n_k') THEN
-!                EXIT
-!            ELSEIF ( i == 1000 ) THEN
-!                CALL print_str('Error: Problem reading chi input file "'//mnp_chi_in_file_x//'". Exiting...')
-!                CALL EXIT(1)
-!            ENDIF
-!        ENDDO
-!!        READ(10, *)
-!        READ(12, *) nk
-!            ALLOCATE(theta(nk,3))
-!            ALLOCATE(gamma_g(nk,3))
-!            ALLOCATE(omega_g(nk,3))
-!        READ(12, *) 
-!        READ(12, *) 
-!        READ(12, *) (omega_g(i,1) , i = 1,nk)
-!        READ(12, *) 
-!        READ(12, *) 
-!        READ(12, *) (gamma_g(i,1) , i = 1,nk)
-!        READ(12, *) 
-!        READ(12, *) 
-!        READ(12, *) (theta(i,1) , i = 1,nk)
+        DO i = 1, 1000
+            READ(12, '(3A)') tmpstr
+            IF ( tmpstr == 'n_k') THEN
+                EXIT
+            ELSEIF ( i == 1000 ) THEN
+                CALL print_str('Error: Problem reading chi input file "'//mnp_chi_in_file_x//'". Exiting...')
+                CALL EXIT(1)
+            ENDIF
+        ENDDO
+!        READ(10, *)
+        READ(12, *) nk
+            ALLOCATE(theta(nk,3))
+            ALLOCATE(gamma_g(nk,3))
+            ALLOCATE(omega_g(nk,3))
+        READ(12, *) 
+        READ(12, *) 
+        READ(12, *) (omega_g(i,1) , i = 1,nk)
+        READ(12, *) 
+        READ(12, *) 
+        READ(12, *) (gamma_g(i,1) , i = 1,nk)
+        READ(12, *) 
+        READ(12, *) 
+        READ(12, *) (theta(i,1) , i = 1,nk)
     CLOSE(12)
 
     OPEN(UNIT=10, FILE=mnp_chi_in_file_y, STATUS='OLD', ACTION='READ')
@@ -478,12 +478,12 @@ SUBROUTINE read_in_file_rho
     INTEGER, PARAMETER :: fh = 15
     INTEGER            :: ios = 0
     INTEGER            :: line = 0
+    INTEGER :: i
     CHARACTER(LEN=6)   :: line_out
 
     ! SET DEFAULTS
     I0           = 1.0_DP
     I0_control   = 1.0_DP
-    field        = 'cosfield'
     trange    = 0.0_DP
     coupled = .FALSE.
     out_pts      = -1.0_DP
@@ -592,8 +592,10 @@ SUBROUTINE read_in_file_rho
                 READ(buffer, *, IOSTAT=ios) I0_control
 
             CASE ('field')
-                READ(buffer, *, IOSTAT=ios) field
-                field = TRIM(field)
+                READ(buffer, *, IOSTAT=ios) (field(i), i=1,3)
+                DO i =1,3
+                    field(i) = TRIM(field(i))
+                ENDDO
 
             CASE ('trange')
                 READ(buffer, *, IOSTAT=ios) trange
@@ -895,7 +897,7 @@ SUBROUTINE print_field_params
     IMPLICIT NONE
     
     ! File handle
-    INTEGER            :: fid
+    INTEGER            :: fid, i
 
     ! Writing parameters to file
     fid = 11 + proc_id
@@ -903,9 +905,11 @@ SUBROUTINE print_field_params
 
         CALL print_title('Field Properties', fid)
         WRITE(fid,*)
-        CALL print_str_str('Field type', field, fid)
 
-        SELECTCASE ( field )
+    DO i = 1,3
+        CALL print_str_str('Field type', field(i), fid)
+
+        SELECTCASE ( field(i) )
 
         CASE ( 'gauss_pulse' )
             CALL print_str_num_real('> Pulse Area', pulse_area, fid)
@@ -936,6 +940,8 @@ SUBROUTINE print_field_params
             CALL print_str_num_real('> Pulse phase', pulse_phase, fid)
             CALL print_str_num_real('> Number of cycles', pulse_cycles, fid)
 
+        CASE ( 'zero' )
+
         CASE DEFAULT
             CALL print_str_num_real('Laser Frequency (a.u.)', omega, fid)
             CALL print_str_num_real('Laser Energy (eV)', omega*au_to_ev, fid)
@@ -943,6 +949,10 @@ SUBROUTINE print_field_params
             CALL print_str_num_real('Laser Amplitude (E0) (a.u.)', E0, fid)
 
         END SELECT
+
+        WRITE(fid, *)
+
+    ENDDO
 
         WRITE(fid, *)
         CALL print_eof(fid)

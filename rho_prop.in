@@ -10,7 +10,7 @@ trange   12000
 rk_step  0.5
 out_pts  10000
 
-field  cosfield
+field  cosfield, zero, zero
 omega  2.5
 I0     1.0
 

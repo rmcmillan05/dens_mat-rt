@@ -107,16 +107,16 @@ SUBROUTINE runge
     DO j = 1, npos 
         k=k+1
         WRITE(poschar, '(I2)') k
-        WRITE(out_id, '(A8)', ADVANCE='NO') ' '//poschar//'.rho_'
+        WRITE(out_id, '(A10)', ADVANCE='NO') ' ('//poschar//').rho_'
         WRITE(poschar, '(I2)') positions(j,1)
         WRITE(out_id, '(A3)', ADVANCE='NO') poschar//','
         WRITE(poschar, '(I2)') positions(j,2)
         WRITE(out_id, '(A2)', ADVANCE='NO') poschar
         IF ( positions(j,1) == positions(j,2) ) THEN
-            WRITE(out_id, '(A9)', ADVANCE='NO') ' '
+            WRITE(out_id, '(A7)', ADVANCE='NO') ' '
         ELSE
             k=k+1
-            WRITE(out_id, '(A31)', ADVANCE='NO') ' '
+            WRITE(out_id, '(A29)', ADVANCE='NO') ' '
         ENDIF
     ENDDO
     WRITE(out_id,*)

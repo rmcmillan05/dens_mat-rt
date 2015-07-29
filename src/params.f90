@@ -16,7 +16,7 @@ MODULE params
     ! SQD_MNP
     !
     LOGICAL       :: coupled
-    REAL(KIND=DP) :: s_alpha(3) = (/2.0_DP,-1.0_DP,-1.0_DP/)
+    REAL(KIND=DP) :: s_alpha(3)
     REAL(KIND=DP) :: eps_0
     REAL(KIND=DP) :: eps_s
     REAL(KIND=DP) :: ratio
@@ -160,7 +160,7 @@ SUBROUTINE get_params
     E0         = SQRT(I0 / intens_par)
     E0_control = SQRT(I0_control / intens_par)
 
-    IF ( field_change_param == 'omega' ) THEN
+    IF ( field_change_param(1:5) == 'omega' ) THEN
         field_param_from = field_param_from/au_to_ev
         field_param_to   = field_param_to/au_to_ev
     ENDIF
@@ -501,6 +501,7 @@ SUBROUTINE read_in_file_rho
     Q_sqd_start    = 0.0_DP
     Q_sqd_end    = 0.0_DP
     Q_mnp_start    = 0.0_DP
+    s_alpha = (/2.0_DP,-1.0_DP,-1.0_DP/)
 
     field_param_npts = -1
 
@@ -553,7 +554,7 @@ SUBROUTINE read_in_file_rho
                 READ(buffer, *, IOSTAT=ios) eps_s
 
             CASE ('s_alpha')
-                READ(buffer, *, IOSTAT=ios) s_alpha
+                READ(buffer, *, IOSTAT=ios) (s_alpha(i), i=1,3)
 
             CASE ('s_rad')
                 READ(buffer, *, IOSTAT=ios) s_rad

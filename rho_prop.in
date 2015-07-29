@@ -2,7 +2,7 @@
 # Input File for rho_prop.exe #
 ###############################
 
-in_folder   './DATA/data_2level/'
+in_folder   './DATA/data_3level/'
 out_folder  './test/'          
 name        'test'
 
@@ -11,8 +11,8 @@ rk_step  0.5
 out_pts  10000
 
 field  cosfield, cosfield, zero
-omega  2.5, 2.5, 0.0
-I0     1.0, 1.0, 0.0
+omega  2.5, 3.5, 0.0
+I0     1.0E3, 1.0E3, 0.0
 
 ##field         gauss
 ##pulse_area    16
@@ -45,6 +45,7 @@ coupled  .TRUE.
 #surf_dist 6.0
 #s_rad     6.6
 #ratio    1
+s_alpha  2.0, -1.0, -1.0
 dist     13.0
 rad      7.5
 eps_0    1.0

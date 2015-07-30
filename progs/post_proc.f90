@@ -3,7 +3,7 @@ PROGRAM post_proc
     USE print_mod
     USE num_lines , ONLY : numlines
     USE freq_analysis , ONLY : get_freq_amp, find_closest, remove_duplicates
-    USE global_params , ONLY : std_out, energy_par, wave_par, real_fmt
+    USE global_params , ONLY : std_out, energy_par, wave_par, real_fmt, au_to_ev
     USE params , ONLY : get_params_pp, freqs_in, field_in_file,      &
                                   probe_freq, field_out_file, freqs_out_file,  &
                                   read_col, in_file, read_first_npts
@@ -75,7 +75,7 @@ PROGRAM post_proc
     ALLOCATE(headers(3))
     ALLOCATE(table(SIZE(exp_coeff),3))
         headers(1) = 'freqs'
-        table(:,1) = freqs_out
+        table(:,1) = freqs_out*au_to_ev
 
         headers(2) = 'exp. coeff. (real pt)'
         table(:,2) = REAL(exp_coeff)
@@ -96,7 +96,7 @@ PROGRAM post_proc
     ALLOCATE(headers(3))
     ALLOCATE(table(nf,3))
         headers(1) = 'freqs'
-        table(:,1) = pos_freqs
+        table(:,1) = pos_freqs*au_to_ev
 
         headers(2) = 'real amp. (cosine)'
         table(:,2) = cos_coeff
@@ -114,18 +114,18 @@ PROGRAM post_proc
     CALL find_closest(pos_freqs, probe_freq, tmp, probe_freq_id)
     CALL print_str('## Selecting "freq_probe" for comparison', fid)
     WRITE(fid, '(A2)', ADVANCE='NO') '! ' 
-    WRITE(std_out, '(ES22.14)', ADVANCE='NO') pos_freqs(probe_freq_id)
-    WRITE(fid, '(ES22.14)', ADVANCE='NO') pos_freqs(probe_freq_id)
+!    WRITE(std_out, '(ES22.14)', ADVANCE='NO') pos_freqs(probe_freq_id)
+!    WRITE(fid, '(ES22.14)', ADVANCE='NO') pos_freqs(probe_freq_id)
     ! WRITE FREQUENCY ALSO IN eV
     WRITE(std_out, '(ES22.14)', ADVANCE='NO') pos_freqs(probe_freq_id)*        &
-                                              energy_par/wave_par
+                                              au_to_ev
     WRITE(fid, '(ES22.14)', ADVANCE='NO') pos_freqs(probe_freq_id)*            &
-                                          energy_par/wave_par
-    ! WRITING LASER FREQ - THIS NEEDS TO BE REMOVED
-    WRITE(std_out, '(ES22.14)', ADVANCE='NO') pos_freqs(2)*        &
-                                              energy_par/wave_par
-    WRITE(fid, '(ES22.14)', ADVANCE='NO') pos_freqs(2)*            &
-                                          energy_par/wave_par
+                                          au_to_ev
+!    ! WRITING LASER FREQ - THIS NEEDS TO BE REMOVED
+!    WRITE(std_out, '(ES22.14)', ADVANCE='NO') pos_freqs(2)*        &
+!                                              energy_par/wave_par
+!    WRITE(fid, '(ES22.14)', ADVANCE='NO') pos_freqs(2)*            &
+!                                          energy_par/wave_par
     WRITE(std_out, '(ES22.14)', ADVANCE='NO') cos_coeff(probe_freq_id)
     WRITE(fid, '(ES22.14)', ADVANCE='NO') cos_coeff(probe_freq_id)
     WRITE(std_out, '(ES22.14)', ADVANCE='NO') sin_coeff(probe_freq_id)

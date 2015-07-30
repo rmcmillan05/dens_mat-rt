@@ -137,6 +137,10 @@ elif perform == 'average':
     av = sum(y)/float(N)
     message('Average value between ',str(x[0]),' and ',str(x[len(x)-1]), ' is:')
     out_message(str(av))
+elif perform == 'max':
+    maxm = max(y)
+    message('Maximum value between ',str(x[0]),' and ',str(x[len(x)-1]), 'is:')
+    out_message(str(maxm))
 elif perform == 'fft':
 
     if not delay == 0.0:

@@ -610,6 +610,7 @@ END SUBROUTINE read_in_file_rho
 SUBROUTINE get_params_pp
     USE double
     USE print_mod , ONLY : print_str
+    USE global_params , ONLY : au_to_ev
     IMPLICIT NONE
     
     ! INPUT-RELATED VARIABLES
@@ -700,10 +701,12 @@ SUBROUTINE get_params_pp
 
             CASE ('probe_freq')
                 READ(buffer, *, IOSTAT=ios) probe_freq
+                probe_freq = probe_freq/au_to_ev
                 CALL param_read_success('probe_freq',logid)
 
             CASE ('freqs')
                 READ(buffer, *, IOSTAT=ios) freqs_in
+                freqs_in = freqs_in/au_to_ev
                 CALL param_read_success('freqs',logid)
 
             CASE ('start_from')

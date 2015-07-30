@@ -14,11 +14,11 @@ go_to  10000
 ## Number of frequencies given in "freqs". This must be specified BEFORE
 ## "freqs" and is a required option [no default]
 num_freqs  2
-## Frequencies that are present in the motion (in a.u.) [no default]
-freqs  8.81984433810464E-02 9.18733785219230E-02
+## Frequencies that are present in the motion (in eV) [no default]
+freqs  2.5 5.0
 ## This frequency is highlighted with ! in the .freqs output file [default
 ## probe_freq=0.0]
-probe_freq  8.81984433810464E-02
+probe_freq  2.5
 ## Maximum order (e.g. if sin^2 present => max_order=2) [default max_order=1]
 max_order  1
 ## Whether or not to calculate the differences between all the frequencies

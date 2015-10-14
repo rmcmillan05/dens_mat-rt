@@ -49,6 +49,8 @@ go_to = np.inf
 delay = 0.0
 div_by_field = 0
 perform = 'fft'
+time_par_type = 'au'
+time_par = 1.0
 
 nl = 0
 with open(masterin) as foo:
@@ -80,6 +82,8 @@ with open(masterin) as foo:
                 div_by_field = 1
             elif p == 'perform':
                 perform = a
+            elif p == 'units_time':
+                time_par_type = a
             else:
                 read_warning()
 
@@ -93,21 +97,30 @@ x = []
 y = []
 if div_by_field == 1: f = [] 
 
+if time_par_type == 'fs':
+    time_par = 41.3413733452
+
+start_from = start_from * time_par
+go_to      = go_to * time_par
+
 nl = 0
 with open(infile) as foo:
     for line in foo:
+        li = line.strip()
+        if li.startswith("#"):
+            continue
         nl = nl+1
         columns = line.split()
         if nl == 1:
             try:
-                xtmp = float(columns[0])
+                xtmp = float(columns[0])*time_par
                 name = joinwords('col_',str(readcol))
             except:
                 name = str(columns[readcol - 1])
                 continue
         if len(columns) > 0:
             try:
-                xtmp = float(columns[0])
+                xtmp = float(columns[0])*time_par
             except:
                 if nl == 2:
                     error('Error in reading input file "',infile,'".')

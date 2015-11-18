@@ -39,7 +39,19 @@ else:
     masterin = 'fft.in'
 
 if not os.path.isfile(masterin):
-    error('Input file "',masterin,'" does not exist.')
+    fid = open('fft.in', 'w')
+    print('# Input file for fft.py',file=fid)
+    print('',file=fid)
+    print('perform       fft # integrate / average / fft',file=fid)
+    print('infile        test.out',file=fid)
+    print('outfile       test.out.ft',file=fid)
+    print('readcol       6',file=fid)
+    print('field_col     2',file=fid)
+    print('from          1900',file=fid)
+    print('to            2000',file=fid)
+    print('#units_time    fs',file=fid)
+    print('#damp_factor   0.1 # Lorentzian damping in eV',file=fid)
+    error('Input file "',masterin,'" does not exist. Temporary fft.in written.')
 
 #Defaults
 readcol = 2
@@ -51,6 +63,8 @@ div_by_field = 0
 perform = 'fft'
 time_par_type = 'au'
 time_par = 1.0
+damp_factor = 0.0
+damp_function = 1.0
 
 nl = 0
 with open(masterin) as foo:
@@ -84,6 +98,8 @@ with open(masterin) as foo:
                 perform = a
             elif p == 'units_time':
                 time_par_type = a
+            elif p == 'damp_factor':
+                damp_factor = float(a)
             else:
                 read_warning()
 
@@ -91,7 +107,7 @@ with open(masterin) as foo:
 #outfile = 'test.dat'
 #readcol = 2
 
-freq_au_to_ev = 27.211
+freq_au_to_ev = 27.2113834
 
 x = []
 y = []
@@ -102,6 +118,7 @@ if time_par_type == 'fs':
 
 start_from = start_from * time_par
 go_to      = go_to * time_par
+damp_factor = damp_factor / freq_au_to_ev
 
 nl = 0
 with open(infile) as foo:
@@ -156,6 +173,10 @@ elif perform == 'max':
     out_message(str(maxm))
 elif perform == 'fft':
 
+    if not damp_factor == 0.0:
+        for i in range(N):
+            y[i] = y[i] * np.exp(-damp_factor * x[i])
+
     if not delay == 0.0:
     ##    ytmp = y[N-delayid:N]
     ##    ytmp = ytmp + y[0:N-delayid]
@@ -182,7 +203,10 @@ elif perform == 'fft':
     #ywf = fft(y*w)
 
     xf = np.linspace(0.0, 1.0/(2.0*T ), N/2)
+#    for i in range(N/2):
+#        yf[i] = yf[i]/np.exp(-1j*xf[i]*0.001*time_par)/5.33802520488724E-11*4.*np.pi
     xf = 2.0*np.pi * freq_au_to_ev * xf
+
 
     #### NB Note that we print out the conjugate ####
     print("%-22s %-22s %-22s %-22s" % ('Freq.', 'FFT.real', 'FFT.imag', 'FFT.abs'), file=fid)

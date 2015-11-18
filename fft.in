@@ -1,10 +1,11 @@
 # Input file for fft.py
 
-perform  fft # integrate / average / fft
-infile   test.out
-outfile  test.out.ft
-readcol  2
-field_col 2
-from     1900
-to       2000
-units_time  fs
+perform       fft # integrate / average / fft
+infile        test.out
+outfile       test.out.ft
+readcol       6
+field_col     2
+from          1900
+to            2000
+#units_time    fs
+#damp_factor   0.1 # Lorentzian damping in eV

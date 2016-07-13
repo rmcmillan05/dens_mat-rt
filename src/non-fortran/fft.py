@@ -251,7 +251,7 @@ elif perform == 'fft':
         if (div_by_field == 1): ftmp = f
 
     #yf = fft(y)
-    if yambo_delta and div_by_field: ftmp = [-ftmp[i]/speed_of_light*fs_to_au*1.e-3/T for i in range(len(ftmp))]
+    if yambo_delta and div_by_field: ftmp = [ftmp[i]*fs_to_au*1.e-3/T/5.14220652e11 for i in range(len(ftmp))]
 
     yf = fft(ytmp[start_id:len(ytmp)])
     if (div_by_field == 1): ff = fft(ftmp[start_id:len(ftmp)])

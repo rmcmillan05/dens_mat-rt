@@ -54,6 +54,7 @@ if not os.path.isfile(masterin):
     print('#units_time    fs',file=fid)
     print('#damp_factor   0.1 # Lorentzian damping in eV',file=fid)
     print('#yambo_delta   # Correct field to match YPP output',file=fid)
+    print('#yambo_timestep 0.1e-2  # Timestep used in yambo_rt (in fs)',file=fid)
     print('#EELS          # Output 1/FFT also', file=fid)
     fid.close()
     os.system('vi '+masterin)
@@ -76,6 +77,7 @@ damp_function = 1.0
 start_id = 0  ################### to shift delta over for yambo
 speed_of_light = 137.03599911
 yambo_delta = 0
+yambo_timestep = 1
 calc_eels = 0
 
 nl = 0
@@ -120,6 +122,8 @@ with open(masterin) as foo:
             elif p == 'yambo_delta':
                 yambo_delta = 1
                 start_id = 1
+            elif p == 'yambo_timestep':
+                yambo_timestep = float(a)
             elif p == 'EELS':
                 calc_eels = 1
             else:
@@ -251,7 +255,7 @@ elif perform == 'fft':
         if (div_by_field == 1): ftmp = f
 
     #yf = fft(y)
-    if yambo_delta and div_by_field: ftmp = [ftmp[i]*fs_to_au*1.e-3/T/5.14220652e11 for i in range(len(ftmp))]
+    if yambo_delta and div_by_field: ftmp = [ftmp[i]*fs_to_au*yambo_timestep/T/5.14220652e11 for i in range(len(ftmp))]
 
     yf = fft(ytmp[start_id:len(ytmp)])
     if (div_by_field == 1): ff = fft(ftmp[start_id:len(ftmp)])

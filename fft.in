@@ -1,11 +1,16 @@
 # Input file for fft.py
 
-perform       fft # integrate / average / fft
+perform       fft # max / integrate / average / fft
 infile        test.out
+#field_file    test.field.out
 outfile       test.out.ft
 readcol       6
 field_col     2
-from          1900
-to            2000
+#delay         50
+#from          1900
+#to            2000
 #units_time    fs
 #damp_factor   0.1 # Lorentzian damping in eV
+#yambo_delta   # Correct field to match YPP output
+#yambo_timestep 0.1e-2  # Timestep used in yambo_rt (in fs)
+#EELS          # Output 1/FFT also

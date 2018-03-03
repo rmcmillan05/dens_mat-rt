@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 from scipy.signal import blackman
 import sys
 import os.path
+import math
 
 def joinwords(*words):
     joined = ''.join(words)
@@ -277,7 +278,7 @@ elif perform == 'fft':
     #w = blackman(N)
     #ywf = fft(y*w)
 
-    xf = np.linspace(0.0, 1.0/(2.0*T ), N/2)
+    xf = np.linspace(0.0, 1.0/(2.0*T ), math.floor(N/2))
 #    for i in range(N/2):
 #        yf[i] = yf[i]/np.exp(-1j*xf[i]*0.001*fs_to_au)/5.33802520488724E-11*4.*np.pi
     xf = 2.0*np.pi * freq_au_to_ev * xf
@@ -292,19 +293,19 @@ elif perform == 'fft':
         print("%-22s %-22s %-22s %-22s" % ('Freq.', 'FFT.real', 'FFT.imag', 'FFT.abs'), file=fid)
 
     if (div_by_field == 1):
-        for i in range(N/2):
+        for i in range(math.floor(N/2)):
             if calc_eels:
                 print("%22.13G %22.13G %22.13G %22.13G %22.13G %22.13G" % (xf[i], eps[i].real, -eps[i].imag, np.abs(eps[i]), eels[i].real, eels[i].imag), file=fid)
             else:
                 print("%22.13G %22.13G %22.13G %22.13G" % (xf[i], eps[i].real, -eps[i].imag, np.abs(eps[i])), file=fid)
     else:
-        for i in range(N/2):
+        for i in range(math.floor(N/2)):
             print("%22.13G %22.13G %22.13G %22.13G" % (xf[i], 2.0/float(N)*yf[i].real, -2.0/float(N)*yf[i].imag, np.abs(2.0/float(N)*yf[i])), file=fid)
 
     if not delay == 0.0: message('Time Delay: ', str(delayapp), '.')
     message('FFT of column ',str(readcol), ' successfully output to "',outfile,'".')
     message('Resolution: ',str(xf[1]-xf[0]),' eV.')
-    message('Max Energy: ',str(xf[N/2-1]),' eV.')
+    message('Max Energy: ',str(xf[math.floor(N/2)-1]),' eV.')
     fid.close()
 else:
     error('Perform program: "',perform,'" not recognised.')
